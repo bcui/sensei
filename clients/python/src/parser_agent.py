@@ -9,9 +9,7 @@ import urllib, urllib2
 import logging
 import re
 from sensei_client import SQLRequest
-from pyparsing import Literal, CaselessLiteral, Word, Upcase, delimitedList, Optional, \
-    Combine, Group, alphas, nums, alphanums, ParseException, Forward, oneOf, quotedString, \
-    ZeroOrMore, restOfLine, Keyword, OnlyOnce
+from pyparsing import ParseException
 
 PARSER_AGENT_PORT = 8888
 
@@ -53,7 +51,6 @@ class ParseBQL(resource.Resource):
     try:
       info = request.args["info"][0]
       info = json.loads(info.encode('utf-8'))
-      print ">>> info = ", info
 
       variables = re.findall(r"\$[a-zA-Z0-9]+", info["bql"])
       variables = list(set(variables))
@@ -89,11 +86,6 @@ VIEWS = {
 
 
 if __name__ == '__main__':
-  params = {}
-  # params["info"] = """{"name": "nus_member", "description": "xxx xxxx", "urn": "urn:feed:nus:member:exp:a:$memberId", 'bql': 'select * from cars where memberId in ("$memberId")'}"""
-  params["info"] = """{"name": "nus_member", "description": "xxx xxxx"}"""
-  print urllib.urlencode(params)
-
   root = Root()
   for viewName, className in VIEWS.items():
     #add the view to the web service
