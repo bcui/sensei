@@ -54,7 +54,7 @@ class ParseBQL(resource.Resource):
 
       variables = re.findall(r"\$[a-zA-Z0-9]+", info["bql"])
       variables = list(set(variables))
-      info["auxParams"] = [ {"name": var[1:]} for var in variables ]
+      info["auxParams"] = {"array": [ {"name": var[1:]} for var in variables ]}
 
       req = SQLRequest(info["bql"])
       result = json.dumps(req.construct_ucp_json(info))
