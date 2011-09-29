@@ -7,6 +7,7 @@ from twisted.python import log
 from datetime import datetime
 import urllib, urllib2
 import logging
+import re
 
 PARSER_AGENT_PORT = 8888
 
@@ -47,17 +48,29 @@ class ParseBQL(resource.Resource):
     """Start a Sensei store."""
     try:
       info = request.args["info"][0]
-      info_json = json.loads(info.encode('utf-8'))
-      print ">>> info_json = ", info_json
+      info = json.loads(info.encode('utf-8'))
+      print ">>> info = ", info
 
-      req = SQLRequest(info_json["bql"])
-      result = json.dumps(req.construct_ucp_json(info_json))
+      variables = re.findall(r"\$[a-zA-Z0-9]+", info["bql"])
+      variables = list(set(variables))
+      info["auxParams"] = [ {"name": var[1:]} for var in variables ]
+
+      req = SQLRequest(info["bql"])
+      result = json.dumps(req.construct_ucp_json(info))
 
       return json.dumps(
         {
           "ok": True,
           "result": result
           })
+    except ParseException as err:
+      print err
+      return json.dumps(
+        {
+          "ok": False,
+          "error": "Parsing error at location %s: %s" % (err.loc, err.msg)
+          })
+
     except Exception as err:
       print err
       return "Error"
@@ -74,7 +87,7 @@ VIEWS = {
 # Content from sensei_client.py
 # ========================================================================
 
-logger = logging.getLogger("sensei_client")
+logger = logging.getLogger("parse_agent")
 
 # TODO:
 #
@@ -521,7 +534,7 @@ class SQLRequest:
       "description": info["description"],
       "feedQuery" : {
         "urn": info["urn"],
-        "aux": []
+        "auxParams": info["auxParams"]
         },
       "bql": self.sql_stmt,
       "filters": {
