@@ -843,7 +843,7 @@ class BQLRequest:
 
     return self.facet_init_param_map
 
-  def construct_ucp_json(self):
+  def construct_ucp_json(self, info):
     output_selections = []
     for selection in self.get_selections():
       select_dict = {}
@@ -871,11 +871,19 @@ class BQLRequest:
       sort_dict["sortOrder"] = sort.dir.upper()
       output_sorts.append(sort_dict)
 
+    # input = {
+    #   "name": "nus_member",
+    #   "description": "xxx xxx",
+    #   "urn": "urn:feed:nus:member:exp:a:$memberId",
+    #   "bql": "select * from ..."
+    #   },
+
     output = {
-      "name": "nus_member",
-      "description": "Member NUS feed ==> select * from urn:feed:nus:member:exp:a:$memberId where actor = $memberId order by createdDate DESC",
+      "name": info["name"],
+      "description": info["description"],
       "feedQuery" : {
-        "urn": "urn:feed:nus:member:exp:a:$memberId"
+        "urn": info["urn"],
+        "auxParams": info["auxParams"]
         },
       "bql": self.sql_stmt,
       "filters": {
@@ -896,7 +904,7 @@ class BQLRequest:
         }
       }
 
-    return json.dumps(output, indent=4)
+    return json.dumps(output)
 
 
 def test(str):
