@@ -8,7 +8,7 @@ from datetime import datetime
 import urllib, urllib2
 import logging
 import re
-from sensei_client import SQLRequest
+from sensei_client import BQLRequest
 from pyparsing import ParseException
 
 PARSER_AGENT_PORT = 8888
@@ -56,7 +56,7 @@ class ParseBQL(resource.Resource):
       variables = list(set(variables))
       info["auxParams"] = {"array": [ {"name": var[1:]} for var in variables ]}
 
-      req = SQLRequest(info["bql"])
+      req = BQLRequest(info["bql"])
       result = json.dumps(req.construct_ucp_json(info))
 
       return json.dumps(

@@ -845,7 +845,7 @@ class BQLRequest:
 
   def construct_ucp_json(self, info):
     output_selections = []
-    for selection in self.get_selections():
+    for field, selection in self.get_selections().iteritems():
       select_dict = {}
       select_dict["name"] = selection.field
       select_dict["valueOperation"] = selection.operation.upper()
@@ -1750,8 +1750,16 @@ def main(argv):
 
   def test_ucp(stmt):
     # test(stmt)
-    req = SQLRequest(stmt)
-    print req.construct_ucp_json()
+    req = BQLRequest(stmt)
+
+    info = {
+      "name": "nus_member",
+      "description": "xxx xxxx",
+      "urn": "urn:feed:nus:member:exp:a:$memberId",
+      "auxParams" : {"array": [ {"name": "var1"} ]},
+      "bql": stmt
+      }
+    print req.construct_ucp_json(info)
 
   import readline
   readline.parse_and_bind("tab: complete")
