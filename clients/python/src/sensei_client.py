@@ -637,7 +637,6 @@ class BQLRequest:
     finally:
       reset_all()
 
-    self.sql_stmt = sql_stmt
     self.query = ""
     self.selections = None
     self.selection_list = []
@@ -842,69 +841,6 @@ class BQLRequest:
         self.facet_init_param_map[facet] = init_param
 
     return self.facet_init_param_map
-
-  def construct_ucp_json(self, info):
-    output_selections = []
-    for field, selection in self.get_selections().iteritems():
-      select_dict = {}
-      select_dict["name"] = selection.field
-      select_dict["valueOperation"] = selection.operation.upper()
-      if selection.values:
-        select_dict["selection"] = {"array": [val for val in selection.values]}
-      if selection.excludes:
-        select_dict["exclude"] = {"array": [val for val in selection.excludes]}
-      output_selections.append(select_dict)
-
-    output_facets = []
-    for field, facet in self.get_facets().iteritems():
-      facet_dict = {}
-      facet_dict["name"] = field
-      facet_dict["minHitCount"] = facet.minHits
-      facet_dict["maxHitCount"] = facet.maxCounts
-      facet_dict["orderBy"] = facet.orderBy == "hits" and "HITS" or "VALUE"
-      output_facets.append(facet_dict)
-
-    output_sorts = []
-    for sort in self.get_sorts():
-      sort_dict = {}
-      sort_dict["name"] = sort.field
-      sort_dict["sortOrder"] = sort.dir.upper()
-      output_sorts.append(sort_dict)
-
-    # input = {
-    #   "name": "nus_member",
-    #   "description": "xxx xxx",
-    #   "urn": "urn:feed:nus:member:exp:a:$memberId",
-    #   "bql": "select * from ..."
-    #   },
-
-    output = {
-      "name": info["name"],
-      "description": info["description"],
-      "feedQuery" : {
-        "urn": info["urn"],
-        "auxParams": info["auxParams"]
-        },
-      "bql": self.sql_stmt,
-      "filters": {
-        "com.linkedin.ucp.query.models.QueryFilters": {
-          "keywords": {
-            "array": [self.get_query()]
-            },
-          "facetSelections": {
-            "array": output_selections
-            }
-          }
-        },
-      "facets": {
-        "array": output_facets
-        },
-      "order": {
-        "array": output_sorts
-        }
-      }
-
-    return json.dumps(output)
 
 
 def test(str):
@@ -1748,19 +1684,6 @@ def main(argv):
     logger.debug("Url specified, host: %s, port: %d" % (host,port))
     client = SenseiClient(host, port, 'sensei')
 
-  def test_ucp(stmt):
-    # test(stmt)
-    req = BQLRequest(stmt)
-
-    info = {
-      "name": "nus_member",
-      "description": "xxx xxxx",
-      "urn": "urn:feed:nus:member:exp:a:$memberId",
-      "auxParams" : {"array": [ {"name": "var1"} ]},
-      "bql": stmt
-      }
-    print req.construct_ucp_json(info)
-
   import readline
   readline.parse_and_bind("tab: complete")
   while 1:
@@ -1779,8 +1702,6 @@ def main(argv):
         sysinfo.display()
       else:
         pass
-      # test_sql(stmt)
-      test_ucp(stmt)
     except EOFError:
       break
     except ParseException as err:
