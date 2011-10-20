@@ -15,14 +15,13 @@ class TestUCPQueryTemplate(unittest.TestCase):
     stmt = \
         "SELECT color, year FROM cars WHERE QUERY IS 'cool $myKeywords' AND year < 1996 ORDER BY color GROUP BY color TOP 15;"
 
-    req = BQLRequest(stmt)
     info = {
       "name": "nus_member",
       "description": "Test BQL query template generator",
       "urn": "urn:feed:nus:member:exp:a:$memberId",
       "bql": stmt
       }
-    self.assertEqual(json.dumps(parser_agent.construct_ucp_json(req, info),
+    self.assertEqual(json.dumps(parser_agent.construct_ucp_json(info),
                                 sort_keys=True, indent=4),
                      """{
     "bql": "SELECT color, year FROM cars WHERE QUERY IS 'cool $myKeywords' AND year < 1996 ORDER BY color GROUP BY color TOP 15;", 

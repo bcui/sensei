@@ -52,10 +52,9 @@ class ParseBQL(resource.Resource):
     """Start a BQL parser server."""
     try:
       info = request.args["info"][0]
+      log.msg("Input info: %s" % info)
       info = json.loads(info.encode('utf-8'))
-
-      req = BQLRequest(info["bql"])
-      result = json.dumps(construct_ucp_json(req, info), sort_keys=True)
+      result = json.dumps(construct_ucp_json(info), sort_keys=True)
 
       return json.dumps({
           "ok": True,
@@ -81,10 +80,10 @@ VIEWS = {
   "parse": ParseBQL()
 }
 
-def construct_ucp_json(request, info,
-                       max_per_group=DEFAULT_REQUEST_MAX_PER_GROUP):
+def construct_ucp_json(info, max_per_group=DEFAULT_REQUEST_MAX_PER_GROUP):
   """Construct BQL query template for UCP."""
 
+  request = BQLRequest(info["bql"])
   variables = re.findall(r"\$[a-zA-Z0-9]+", info["bql"])
   variables = list(set(variables))
   info["auxParams"] = {"array": [ {"name": var[1:]} for var in variables ]}
@@ -179,14 +178,13 @@ def main(argv):
       stmt = raw_input('> ')
       if stmt == "exit":
         break
-      req = BQLRequest(stmt)
       info = {
         "name": "nus_member",
         "description": "Test BQL query template generator",
         "urn": "urn:feed:nus:member:exp:a:$memberId",
         "bql": stmt
         }
-      print json.dumps(construct_ucp_json(req, info), sort_keys=True, indent=4)
+      print json.dumps(construct_ucp_json(info), sort_keys=True, indent=4)
     except EOFError:
       break
     except ParseException as err:
@@ -213,7 +211,6 @@ that semicolons in the statement, if you use them, have to be encoded as
 "%3B":
 
 $ curl -X POST 'http://localhost:8888/parse' -d 'info={"name":"nus_member", "description":"Test Description", "urn":"urn:feed:nus:member:exp:a:$memberId", "bql":"select * from cars where memberId in (\"$memberId\") group by color top 5 %3B"} '
-
 {"ok": true, "result": "{\"bql\": \"select * from cars where memberId in (\\\"$memberId\\\") group by color top 5 ;\", \"description\": \"Test Description\", \"facets\": {\"array\": []}, \"feedQuery\": {\"auxParams\": {\"array\": [{\"name\": \"memberId\"}]}, \"urn\": \"urn:feed:nus:member:exp:a:$memberId\"}, \"filters\": {\"com.linkedin.ucp.query.models.QueryFilters\": {\"facetSelections\": {\"array\": [{\"name\": \"memberId\", \"selection\": {\"array\": [\"$memberId\"]}, \"valueOperation\": \"OR\"}]}, \"keywords\": {\"array\": [\"\"]}}}, \"groupBy\": {\"com.linkedin.ucp.query.models.QueryFacetGroupBySpec\": {\"maxHitsPerGroup\": 5, \"name\": \"color\"}}, \"name\": \"nus_member\", \"order\": {\"array\": []}}"}
 
 """
