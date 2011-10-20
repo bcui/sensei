@@ -59,10 +59,9 @@ class ParseBQL(resource.Resource):
       info["auxParams"] = {"array": [ {"name": var[1:]} for var in variables ]}
 
       req = BQLRequest(info["bql"])
-      result = json.dumps(construct_ucp_json(req, info))
+      result = json.dumps(construct_ucp_json(req, info), sort_keys=True)
 
-      return json.dumps(
-        {
+      return json.dumps({
           "ok": True,
           "result": result
           })
@@ -152,9 +151,7 @@ def construct_ucp_json(request, info,
         }
       }
     }
-
-  return json.dumps(output, sort_keys=True, indent=4)
-
+  return output
 
 def main(argv):
   from optparse import OptionParser
@@ -193,7 +190,7 @@ def main(argv):
         "urn": "urn:feed:nus:member:exp:a:$memberId",
         "bql": stmt
         }
-      print construct_ucp_json(req, info)
+      print json.dumps(construct_ucp_json(req, info), sort_keys=True, indent=4)
     except EOFError:
       break
     except ParseException as err:

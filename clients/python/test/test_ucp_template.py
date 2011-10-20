@@ -22,7 +22,8 @@ class TestUCPQueryTemplate(unittest.TestCase):
       "urn": "urn:feed:nus:member:exp:a:$memberId",
       "bql": stmt
       }
-    self.assertEqual(parser_agent.construct_ucp_json(req, info),
+    self.assertEqual(json.dumps(parser_agent.construct_ucp_json(req, info),
+                                sort_keys=True, indent=4),
                      """{
     "bql": "SELECT color, year FROM cars WHERE QUERY IS 'cool $myKeywords' AND year < 1996 ORDER BY color GROUP BY color TOP 15;", 
     "description": "Test BQL query template generator", 
