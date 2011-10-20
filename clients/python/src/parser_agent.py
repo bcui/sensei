@@ -8,7 +8,7 @@ from datetime import datetime
 import urllib, urllib2
 import logging
 import re
-from sensei_client import BQLRequest, SenseiClient, SenseiClientError, SenseiRequest
+from sensei_client import BQLRequest, SenseiClient, SenseiClientError, SenseiRequest, DEFAULT_REQUEST_MAX_PER_GROUP
 from pyparsing import ParseException
 
 logger = logging.getLogger("parser_agent")
@@ -86,7 +86,8 @@ VIEWS = {
   "parse": ParseBQL()
 }
 
-def construct_ucp_json(request, info):
+def construct_ucp_json(request, info,
+                       max_per_group=DEFAULT_REQUEST_MAX_PER_GROUP):
   """Construct BQL query template for UCP."""
 
   output_selections = []
@@ -146,21 +147,30 @@ def construct_ucp_json(request, info):
       },
     "order": {
       "array": output_sorts
+      },
+    "groupBy": {
+      "com.linkedin.ucp.query.models.QueryFacetGroupBySpec": {
+        "name": request.get_groupby(),
+        "maxHitsPerGroup": request.get_max_per_group() or max_per_group
+        }
       }
     }
 
-  return json.dumps(output)
+  return json.dumps(output, sort_keys=True, indent=4)
 
 
 def main(argv):
   from optparse import OptionParser
   usage = "usage: %prog [options]"
   parser = OptionParser(usage=usage)
-  parser.add_option("-i", "--interactive", dest="interactive",
+  parser.add_option("-i", "--interactive", action="store_true", dest="interactive",
                     default=False, help="Run UCP parser in interactive mode")
   parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
                     default=False, help="Turn on verbose mode")
   (options, args) = parser.parse_args()
+
+  if not options.interactive:
+    return
 
   if options.verbose:
     logger.setLevel(logging.DEBUG)
@@ -172,53 +182,34 @@ def main(argv):
   stream_handler.setFormatter(formatter)
   logger.addHandler(stream_handler)
 
-  # if len(args) <= 1:
-  #   client = SenseiClient()
-  # else:
-  #   host = args[0]
-  #   port = int(args[1])
-  #   logger.debug("Url specified, host: %s, port: %d" % (host,port))
-  #   client = SenseiClient(host, port, 'sensei')
-
-  def test_ucp(stmt):
-    # test(stmt)
-    req = BQLRequest(stmt)
-
-    info = {
-      "name": "nus_member",
-      "description": "xxx xxxx",
-      "urn": "urn:feed:nus:member:exp:a:$memberId",
-      "auxParams" : {"array": [ {"name": "var1"} ]},
-      "bql": stmt
-      }
-    print construct_ucp_json(req, info)
-
   import readline
   readline.parse_and_bind("tab: complete")
-  while 1:
+  while True:
     try:
       stmt = raw_input('> ')
       if stmt == "exit":
         break
-      # if options.verbose:
-      #   test(stmt)
-      req = SenseiRequest(stmt)
-      # if req.stmt_type == "select":
-      #   res = client.doQuery(req)
-      #   res.display(columns=req.get_columns(), max_col_width=int(options.max_col_width))
-      # elif req.stmt_type == "desc":
-      #   sysinfo = client.getSystemInfo()
-      #   sysinfo.display()
-      # else:
-      #   pass
-      # test_sql(stmt)
-      test_ucp(stmt)
+      req = BQLRequest(stmt)
+
+      info = {
+        "name": "nus_member",
+        "description": "Test BQL query template generator",
+        "urn": "urn:feed:nus:member:exp:a:$memberId",
+        "bql": stmt
+        }
+
+      variables = re.findall(r"\$[a-zA-Z0-9]+", stmt)
+      variables = list(set(variables))
+      info["auxParams"] = {"array": [ {"name": var[1:]} for var in variables ]}
+      
+      print construct_ucp_json(req, info)
     except EOFError:
       break
     except ParseException as err:
       print " " * (err.loc + 2) + "^\n" + err.msg
     except SenseiClientError as err:
       print err
+  sys.exit()
 
 if __name__ == '__main__':
   main(sys.argv)
