@@ -215,8 +215,10 @@ if __name__ == '__main__':
   reactor.run()
 
 """
-To test, just issue the following command:
+To test, just issue the following command.  It's important to remember
+that semicolons in the statement, if you use them, have to be encoded as
+"%3B":
 
-curl -X POST 'http://localhost:8888/parse' -d 'info={"name":"nus_member", "description":"Test Description", "urn":"urn:feed:nus:member:exp:a:$memberId", "bql":"select * from cars where memberId in (\"$memberId\") group by color"} '
+$ curl -X POST 'http://localhost:8888/parse' -d 'info={"name":"nus_member", "description":"Test Description", "urn":"urn:feed:nus:member:exp:a:$memberId", "bql":"select * from cars where memberId in (\"$memberId\") group by color %3B"} '
 
 """
