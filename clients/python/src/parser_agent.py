@@ -213,3 +213,10 @@ if __name__ == '__main__':
   server = server.Site(root)
   reactor.listenTCP(PARSER_AGENT_PORT, server)
   reactor.run()
+
+"""
+To test, just issue the following command:
+
+curl -X POST 'http://localhost:8888/parse' -d 'info={"name":"nus_member", "description":"Test Description", "urn":"urn:feed:nus:member:exp:a:$memberId", "bql":"select * from cars where memberId in (\"$memberId\") group by color"} '
+
+"""
