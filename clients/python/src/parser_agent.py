@@ -54,10 +54,6 @@ class ParseBQL(resource.Resource):
       info = request.args["info"][0]
       info = json.loads(info.encode('utf-8'))
 
-      variables = re.findall(r"\$[a-zA-Z0-9]+", info["bql"])
-      variables = list(set(variables))
-      info["auxParams"] = {"array": [ {"name": var[1:]} for var in variables ]}
-
       req = BQLRequest(info["bql"])
       result = json.dumps(construct_ucp_json(req, info), sort_keys=True)
 
@@ -216,6 +212,8 @@ To test, just issue the following command.  It's important to remember
 that semicolons in the statement, if you use them, have to be encoded as
 "%3B":
 
-$ curl -X POST 'http://localhost:8888/parse' -d 'info={"name":"nus_member", "description":"Test Description", "urn":"urn:feed:nus:member:exp:a:$memberId", "bql":"select * from cars where memberId in (\"$memberId\") group by color %3B"} '
+$ curl -X POST 'http://localhost:8888/parse' -d 'info={"name":"nus_member", "description":"Test Description", "urn":"urn:feed:nus:member:exp:a:$memberId", "bql":"select * from cars where memberId in (\"$memberId\") group by color top 5 %3B"} '
+
+{"ok": true, "result": "{\"bql\": \"select * from cars where memberId in (\\\"$memberId\\\") group by color top 5 ;\", \"description\": \"Test Description\", \"facets\": {\"array\": []}, \"feedQuery\": {\"auxParams\": {\"array\": [{\"name\": \"memberId\"}]}, \"urn\": \"urn:feed:nus:member:exp:a:$memberId\"}, \"filters\": {\"com.linkedin.ucp.query.models.QueryFilters\": {\"facetSelections\": {\"array\": [{\"name\": \"memberId\", \"selection\": {\"array\": [\"$memberId\"]}, \"valueOperation\": \"OR\"}]}, \"keywords\": {\"array\": [\"\"]}}}, \"groupBy\": {\"com.linkedin.ucp.query.models.QueryFacetGroupBySpec\": {\"maxHitsPerGroup\": 5, \"name\": \"color\"}}, \"name\": \"nus_member\", \"order\": {\"array\": []}}"}
 
 """
