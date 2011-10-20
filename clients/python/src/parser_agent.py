@@ -59,7 +59,7 @@ class ParseBQL(resource.Resource):
       info["auxParams"] = {"array": [ {"name": var[1:]} for var in variables ]}
 
       req = BQLRequest(info["bql"])
-      result = json.dumps(req.construct_ucp_json(info))
+      result = json.dumps(construct_ucp_json(req, info))
 
       return json.dumps(
         {
@@ -90,6 +90,10 @@ def construct_ucp_json(request, info,
                        max_per_group=DEFAULT_REQUEST_MAX_PER_GROUP):
   """Construct BQL query template for UCP."""
 
+  variables = re.findall(r"\$[a-zA-Z0-9]+", info["bql"])
+  variables = list(set(variables))
+  info["auxParams"] = {"array": [ {"name": var[1:]} for var in variables ]}
+
   output_selections = []
   for field, selection in request.get_selections().iteritems():
     select_dict = {}
@@ -116,13 +120,6 @@ def construct_ucp_json(request, info,
     sort_dict["name"] = sort.field
     sort_dict["sortOrder"] = sort.dir.upper()
     output_sorts.append(sort_dict)
-
-  # input = {
-  #   "name": "nus_member",
-  #   "description": "xxx xxx",
-  #   "urn": "urn:feed:nus:member:exp:a:$memberId",
-  #   "bql": "select * from ..."
-  #   },
 
   output = {
     "name": info["name"],
@@ -190,18 +187,12 @@ def main(argv):
       if stmt == "exit":
         break
       req = BQLRequest(stmt)
-
       info = {
         "name": "nus_member",
         "description": "Test BQL query template generator",
         "urn": "urn:feed:nus:member:exp:a:$memberId",
         "bql": stmt
         }
-
-      variables = re.findall(r"\$[a-zA-Z0-9]+", stmt)
-      variables = list(set(variables))
-      info["auxParams"] = {"array": [ {"name": var[1:]} for var in variables ]}
-      
       print construct_ucp_json(req, info)
     except EOFError:
       break
