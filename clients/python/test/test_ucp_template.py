@@ -26,9 +26,6 @@ class TestUCPQueryTemplate(unittest.TestCase):
                      """{
     "bql": "SELECT color, year FROM cars WHERE QUERY IS 'cool $myKeywords' AND year < 1996 ORDER BY color GROUP BY color TOP 15;", 
     "description": "Test BQL query template generator", 
-    "facets": {
-        "array": []
-    }, 
     "feedQuery": {
         "auxParams": {
             "array": [

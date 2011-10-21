@@ -54,7 +54,8 @@ class ParseBQL(resource.Resource):
       info = request.args["info"][0]
       log.msg("Input info: %s" % info)
       info = json.loads(info.encode('utf-8'))
-      result = json.dumps(construct_ucp_json(info), sort_keys=True)
+      # Brian's code only likes the results of double json.dumps ...
+      result = json.dumps(json.dumps(construct_ucp_json(info), sort_keys=True))
 
       return json.dumps({
           "ok": True,
@@ -133,19 +134,26 @@ def construct_ucp_json(info, max_per_group=DEFAULT_REQUEST_MAX_PER_GROUP):
           }
         }
       },
-    "facets": {
+    }
+
+  if output_facets:
+    output["facets"] = {
       "array": output_facets
-      },
-    "order": {
+      }
+
+  if output_sorts:
+    output["order"] = {
       "array": output_sorts
-      },
-    "groupBy": {
+      }
+
+  if request.get_groupby():
+    output["groupBy"] = {
       "com.linkedin.ucp.query.models.QueryFacetGroupBySpec": {
         "name": request.get_groupby(),
         "maxHitsPerGroup": request.get_max_per_group() or max_per_group
         }
       }
-    }
+
   return output
 
 def main(argv):
@@ -211,6 +219,6 @@ that semicolons in the statement, if you use them, have to be encoded as
 "%3B":
 
 $ curl -X POST 'http://localhost:8888/parse' -d 'info={"name":"nus_member", "description":"Test Description", "urn":"urn:feed:nus:member:exp:a:$memberId", "bql":"select * from cars where memberId in (\"$memberId\") group by color top 5 %3B"} '
-{"ok": true, "result": "{\"bql\": \"select * from cars where memberId in (\\\"$memberId\\\") group by color top 5 ;\", \"description\": \"Test Description\", \"facets\": {\"array\": []}, \"feedQuery\": {\"auxParams\": {\"array\": [{\"name\": \"memberId\"}]}, \"urn\": \"urn:feed:nus:member:exp:a:$memberId\"}, \"filters\": {\"com.linkedin.ucp.query.models.QueryFilters\": {\"facetSelections\": {\"array\": [{\"name\": \"memberId\", \"selection\": {\"array\": [\"$memberId\"]}, \"valueOperation\": \"OR\"}]}, \"keywords\": {\"array\": [\"\"]}}}, \"groupBy\": {\"com.linkedin.ucp.query.models.QueryFacetGroupBySpec\": {\"maxHitsPerGroup\": 5, \"name\": \"color\"}}, \"name\": \"nus_member\", \"order\": {\"array\": []}}"}
+{"ok": true, "result": "\"{\\\"bql\\\": \\\"select * from cars where memberId in (\\\\\\\"$memberId\\\\\\\") group by color top 5 ;\\\", \\\"description\\\": \\\"Test Description\\\", \\\"feedQuery\\\": {\\\"auxParams\\\": {\\\"array\\\": [{\\\"name\\\": \\\"memberId\\\"}]}, \\\"urn\\\": \\\"urn:feed:nus:member:exp:a:$memberId\\\"}, \\\"filters\\\": {\\\"com.linkedin.ucp.query.models.QueryFilters\\\": {\\\"facetSelections\\\": {\\\"array\\\": [{\\\"name\\\": \\\"memberId\\\", \\\"selection\\\": {\\\"array\\\": [\\\"$memberId\\\"]}, \\\"valueOperation\\\": \\\"OR\\\"}]}, \\\"keywords\\\": {\\\"array\\\": [\\\"\\\"]}}}, \\\"groupBy\\\": {\\\"com.linkedin.ucp.query.models.QueryFacetGroupBySpec\\\": {\\\"maxHitsPerGroup\\\": 5, \\\"name\\\": \\\"color\\\"}}, \\\"name\\\": \\\"nus_member\\\"}\""}
 
 """
