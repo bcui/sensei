@@ -154,6 +154,47 @@ def construct_ucp_json(info, max_per_group=DEFAULT_REQUEST_MAX_PER_GROUP):
         }
       }
 
+  output_init_params = []
+  for facet_name, init_params in request.get_facet_init_param_map().iteritems():
+    params = []
+    for name, vals in init_params.bool_map.iteritems():
+      params.append({
+          "name": name,
+          "type": "BOOLEAN",
+          "values": vals})
+    for name, vals in init_params.int_map.iteritems():
+      params.append({
+          "name": name,
+          "type": "INT",
+          "values": vals})
+    for name, vals in init_params.long_map.iteritems():
+      params.append({
+          "name": name,
+          "type": "LONG",
+          "values": vals})
+    for name, vals in init_params.string_map.iteritems():
+      params.append({
+          "name": name,
+          "type": "STRING",
+          "values": vals})
+    for name, vals in init_params.byte_map.iteritems():
+      params.append({
+          "name": name,
+          "type": "BYTEARRAY",
+          "values": vals})
+    for name, vals in init_params.double_map.iteritems():
+      params.append({
+          "name": name,
+          "type": "DOUBLE",
+          "values": vals})
+
+    output_init_params.append({
+        "name": facet_name,
+        "initParams": params
+        })
+  if output_init_params:
+    output["facets"] = {"array": output_init_params}
+
   return output
 
 def main(argv):
