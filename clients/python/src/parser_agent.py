@@ -190,7 +190,7 @@ def construct_ucp_json(info, max_per_group=DEFAULT_REQUEST_MAX_PER_GROUP):
 
     output_init_params.append({
         "name": facet_name,
-        "initParams": params
+        "initParams": {"array": params}
         })
   if output_init_params:
     output["facets"] = {"array": output_init_params}
