@@ -20,13 +20,18 @@ import json
 import sys
 import logging
 import datetime
+from datetime import datetime
 import time
 import re
 
 logger = logging.getLogger("sensei_client")
 
 # Regular expression that matches a range facet value
-RANGE_REGEX = re.compile(r"\[(\d+(\.\d+)*|\*) TO (\d+(\.\d+)*|\*)\]")
+RANGE_REGEX = re.compile(r'''\[(\d+(\.\d+)*|\*) TO (\d+(\.\d+)*|\*)\]''')
+
+# Datetime regular expression
+DATE_TIME = r'''(["'])(\d\d\d\d)([-/\.])(\d\d)\3(\d\d) (\d\d):(\d\d):(\d\d)\1'''
+DATE_TIME_REGEX = re.compile(DATE_TIME)
 
 # The lowest resolution that can make a difference in range predicate
 EPSILON = 0.01
@@ -141,8 +146,10 @@ DEFAULT_FACET_ORDER = PARAM_FACET_ORDER_HITS
 #
 
 from pyparsing import Literal, CaselessLiteral, Word, Upcase, delimitedList, Optional, \
-    Combine, Group, alphas, nums, alphanums, ParseException, Forward, oneOf, quotedString, \
-    ZeroOrMore, restOfLine, Keyword, OnlyOnce, Suppress, removeQuotes, NotAny, OneOrMore, MatchFirst
+    Combine, Group, alphas, nums, alphanums, ParseException, ParseFatalException, ParseSyntaxException, \
+    Forward, oneOf, quotedString, \
+    ZeroOrMore, restOfLine, Keyword, OnlyOnce, Suppress, removeQuotes, NotAny, OneOrMore, \
+    MatchFirst, Regex, stringEnd
 
 """
 
@@ -151,19 +158,24 @@ BNF Grammar for BQL
 
 <statement> ::= ( <select_stmt> | <describe_stmt> ) [';']
 
-<select_stmt> ::= SELECT <select_list> <from_clause> [<where_clause>] [<given_clause>] <additional_clauses>
+<select_stmt> ::= SELECT <select_list> <from_clause> [<where_clause>] [<given_clause>]
+                  [<additional_clauses>]
+
 <describe_stmt> ::= ( DESC | DESCRIBE ) <index_name>
 
 <select_list> ::= '*' | <column_name_list>
+
 <column_name_list> ::= <column_name> ( ',' <column_name> )*
 
 <from_clause> ::= FROM <index_name>
 
 <where_clause> ::= WHERE <search_condition>
+
 <search_condition> ::= <predicates>
                      | <cumulative_predicates>
 
 <predicates> ::= <predicate> ( AND <predicate> )*
+
 <predicate> ::= <in_predicate>
               | <contains_all_predicate>
               | <equal_predicate>
@@ -171,25 +183,41 @@ BNF Grammar for BQL
               | <query_predicate>
               | <between_predicate>
               | <range_predicate>
+              | <time_predicate>
               | <same_column_or_pred>
 
 <in_predicate> ::= <column_name> [NOT] IN <value_list> [<except_clause>] [<predicate_props>]
-<contains_all_predicate> ::= <column_name> CONTAINS ALL <value_list> [<except_clause>] [<predicate_props>]
-<equal_predicate> ::= <column_name> '=' <value> [<predicate_props>]
-<not_equal_predicate> ::= <column_name> '<>' <value> [<predicate_props>]
-<query_predicate> ::= QUERY IS <quoted_string>
-<between_predicate> ::= <column_name> [NOT] BETWEEN <value> AND <value>
-<range_predicate> ::= <column_name> <range_op> <numeric>
-<same_column_or_pred> ::= '(' + <cumulative_predicates> + ')'
 
-<cumulative_predicates> ::= <cumulative_predicate> ( ',' <cumulative_predicate> )*
+<contains_all_predicate> ::= <column_name> CONTAINS ALL <value_list> [<except_clause>]
+                             [<predicate_props>]
+
+<equal_predicate> ::= <column_name> '=' <value> [<predicate_props>]
+
+<not_equal_predicate> ::= <column_name> '<>' <value> [<predicate_props>]
+
+<query_predicate> ::= QUERY IS <quoted_string>
+
+<between_predicate> ::= <column_name> [NOT] BETWEEN <value> AND <value>
+
+<range_predicate> ::= <column_name> <range_op> <numeric>
+
+<time_predicate> ::= <column_name> IN LAST <time_span>
+                   | <column_name> ( SINCE | AFTER | BEFORE ) <time_expr>
+
+<same_column_or_pred> ::= '(' <cumulative_predicates> ')'
+
+<cumulative_predicates> ::= <cumulative_predicate> ( OR <cumulative_predicate> )*
+
 <cumulative_predicate> ::= <in_predicate>
                          | <equal_predicate>
                          | <between_predicate>
                          | <range_predicate>
+                         | <time_predicate>
 
 <value_list> ::= '(' <value> ( ',' <value> )* ')'
+
 <value> ::= <quoted_string> | <numeric>
+
 <range_op> ::= '<' | '<=' | '>=' | '>'
 
 <except_clause> ::= EXCEPT <value_list>
@@ -197,16 +225,23 @@ BNF Grammar for BQL
 <predicate_props> ::= WITH <prop_list>
 
 <prop_list> ::= '(' <key_value_pair> ( ',' <key_value_pair> )* ')'
+
 <key_value_pair> ::= <quoted_string> ':' <quoted_string>
 
 <given_clause> ::= GIVEN FACET PARAM <facet_param_list>
+
 <facet_param_list> ::= <facet_param> ( ',' <facet_param> )*
+
 <facet_param> ::= '(' <facet_name> <facet_param_name> <facet_param_type> <facet_param_value> ')'
+
 <facet_param_name> ::= <quoted_string>
+
 <facet_param_type> ::= BOOLEAN | INT | LONG | STRING | BYTEARRAY | DOUBLE
+
 <facet_param_value> ::= <quoted_string>
 
-<additional_clauses> ::= ( <additional_clause> )*
+<additional_clauses> ::= ( <additional_clause> )+
+
 <additional_clause> ::= <order_by_clause>
                       | <group_by_clause>
                       | <limit_clause>
@@ -214,68 +249,100 @@ BNF Grammar for BQL
                       | <fetching_stored_clause>
 
 <order_by_clause> ::= ORDER BY <sort_specs>
+
 <sort_specs> ::= <sort_spec> ( ',', <sort_spec> )*
+
 <sort_spec> ::= <column_name> [<ordering_spec>]
+
 <ordering_spec> ::= ASC | DESC
 
 <group_by_clause> ::= GROUP BY <group_spec>
+
 <group_spec> ::= <facet_name> [TOP <max_per_group>]
 
 <limit_clause> ::= LIMIT [<offset> ','] <count>
+
 <offset> ::= ( <digit> )+
+
 <count> ::= ( <digit> )+
 
 <browse_by_clause> ::= BROWSE BY <facet_specs>
+
 <facet_specs> ::= <facet_spec> ( ',' <facet_spec> )*
+
 <facet_spec> ::= <facet_name> [<facet_expression>]
+
 <facet_expression> ::= '(' <expand_flag> <count> <count> <facet_ordering> ')'
+
 <expand_flag> ::= TRUE | FALSE
+
 <facet_ordering> ::= HITS | VALUE
 
 <fetching_stored_clause> ::= FETCHING STORED [<fetching_flag>]
+
 <fetching_flag> ::= TRUE | FALSE
 
 <quoted_string> ::= '"' ( <char> )* '"'
                   | "'" ( <char> )* "'"
 
 <identifier> ::= <identifier_start> ( <identifier_part> )*
+
 <identifier_start> ::= <alpha> | '-' | '_'
+
 <identifier_part> ::= <identifier_start> | <digit>
 
 <column_name> ::= <identifier>
+
 <facet_name> ::= <identifier>
 
 <alpha> ::= <alpha_lower_case> | <alpha_upper_case>
 
 <alpha_upper_case> ::= A | B | C | D | E | F | G | H | I | J | K | L | M | N | O
                      | P | Q | R | S | T | U | V | W | X | Y | Z
+
 <alpha_lower_case> ::= a | b | c | d | e | f | g | h | i | j | k | l | m | n | o
                      | p | q | r | s | t | u | v | w | x | y | z
+
 <digit> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
 <numeric> ::= <time_expr> | <number>
+
 <number> ::= <integer> | <real>
+
 <integer> ::= ( <digit> )+
+
 <real> ::= ( <digit> )+ '.' ( <digit> )+
 
-<time_expr> ::= [<time_week_part>] [<time_day_part>] [<time_hour_part>]
-                [<time_minute_part>] [<time_second_part>] [<time_millisecond_part>] AGO
+<time_expr> ::= <time_span> AGO
+              | <date_time_string>
               | NOW
 
+<time_span> ::= [<time_week_part>] [<time_day_part>] [<time_hour_part>]
+                [<time_minute_part>] [<time_second_part>] [<time_millisecond_part>]
+
 <time_week_part> ::= <integer> ( 'week' | 'weeks' )
+
 <time_day_part>  ::= <integer> ( 'day'  | 'days' )
+
 <time_hour_part> ::= <integer> ( 'hour' | 'hours' )
-<time_minute_part> ::= <integer> ( 'minute' | 'minutes' | 'min' )
-<time_second_part> ::= <integer> ( 'second' | 'seconds' | 'sec' )
-<time_millisecond_part> ::= <integer> ( 'millisecond' | 'milliseconds' | 'msec' )
+
+<time_minute_part> ::= <integer> ( 'minute' | 'minutes' | 'min' | 'mins')
+
+<time_second_part> ::= <integer> ( 'second' | 'seconds' | 'sec' | 'secs')
+
+<time_millisecond_part> ::= <integer> ( 'millisecond' | 'milliseconds' | 'msec' | 'msecs')
+
+<date_time_string> ::= <digit><digit><digit><digit> ('-' | '/' | '.') <digit><digit>
+                       ('-' | '/' | '.') <digit><digit>
+                       <digit><digit> ':' <digit><digit> ':' <digit><digit>
 
 """
 
 def order_by_act(s, loc, tok):
   for order in tok[1:]:
     if (order[0] == PARAM_SORT_SCORE and len(order) > 1):
-      raise ParseException(s, loc, "%s should not be followed by %s"
-                           % (PARAM_SORT_SCORE, order[1]))
+      raise ParseSyntaxException(ParseException(s, loc, '"ORDER BY %s" should not be followed by %s'
+                                                % (PARAM_SORT_SCORE, order[1])))
 
 limit_once = OnlyOnce(lambda s, loc, tok: tok)
 order_by_once = OnlyOnce(order_by_act)
@@ -290,11 +357,23 @@ def reset_all():
   browse_by_once.reset()
   fetching_stored_once.reset()
 
-def convert_time(toks):
-  """Convert a time expression into a epoch time."""
+def convert_time(s, loc, toks):
+  """Convert a time expression into an epoch time."""
 
   if toks[0] == NOW.match:
     return time_now
+  elif toks.date_time_regex:
+    mm = DATE_TIME_REGEX.match(toks[0])
+    (_, year, _, month, day, hour, minute, second) = mm.groups()
+    try:
+      time_stamp = datetime.strptime("%s-%s-%s %s:%s:%s" % (year, month, day, hour, minute, second),
+                                     "%Y-%m-%d %H:%M:%S")
+    except ValueError as err:
+      raise ParseSyntaxException(ParseException(s, loc, "Invalid date/time string: %s" % toks[0]))
+    return int(time.mktime(time_stamp.timetuple()) * 1000)
+
+def convert_time_span(s, loc, toks):
+  """Convert a time span expression into an epoch time."""
 
   total = 0
   if toks.week_part:
@@ -319,9 +398,11 @@ def convert_time(toks):
 # Keyword.match to do comparison at other places in the code.
 #
 ALL = Keyword("all", caseless=True)
+AFTER = Keyword("after", caseless=True)
 AGO = Keyword("ago", caseless=True)
 AND = Keyword("and", caseless=True)
 ASC = Keyword("asc", caseless=True)
+BEFORE = Keyword("before", caseless=True)
 BETWEEN = Keyword("between", caseless=True)
 BOOLEAN = Keyword("boolean", caseless=True)
 BROWSE = Keyword("browse", caseless=True)
@@ -342,6 +423,7 @@ HITS = Keyword("hits", caseless=True)
 IN = Keyword("in", caseless=True)
 INT = Keyword("int", caseless=True)
 IS = Keyword("is", caseless=True)
+LAST = Keyword("last", caseless=True)
 LIMIT = Keyword("limit", caseless=True)
 LONG = Keyword("long", caseless=True)
 NOT = Keyword("not", caseless=True)
@@ -351,6 +433,7 @@ ORDER = Keyword("order", caseless=True)
 PARAM = Keyword("param", caseless=True)
 QUERY = Keyword("query", caseless=True)
 SELECT = Keyword("select", caseless=True)
+SINCE = Keyword("since", caseless=True)
 STORED = Keyword("stored", caseless=True)
 STRING = Keyword("string", caseless=True)
 TOP = Keyword("top", caseless=True)
@@ -374,8 +457,8 @@ NOT_EQUAL = "<>"
 
 select_stmt = Forward()
 
-ident = Word(alphas, alphanums + "_$")
-column_name = ~keyword + Word(alphas, alphanums + "_-")
+ident = Word(alphas, alphanums + "_-.$")
+column_name = ~keyword + Word(alphas, alphanums + "_-.")
 facet_name = column_name.copy()
 column_name_list = Group(delimitedList(column_name))
 
@@ -388,9 +471,9 @@ CL = CaselessLiteral
 week = Combine(CL("week") + Optional(CL("s")))
 day = Combine(CL("day") + Optional(CL("s")))
 hour = Combine(CL("hour") + Optional(CL("s")))
-minute = Combine(CL("minute") + Optional(CL("s"))) | CL("min")
-second = Combine(CL("second") + Optional(CL("s"))) | CL("sec")
-millisecond = Combine(CL("millisecond") + Optional(CL("s"))) | CL("msec")
+minute = Combine((CL("minute") | CL("min")) + Optional(CL("s")))
+second = Combine((CL("second") | CL("sec")) + Optional(CL("s")))
+millisecond = Combine((CL("millisecond") | CL("msec")) + Optional(CL("s")))
 
 time_week_part = (integer + week).setResultsName("week_part")
 time_day_part = (integer + day).setResultsName("day_part")
@@ -399,15 +482,18 @@ time_minute_part = (integer + minute).setResultsName("minute_part")
 time_second_part = (integer + second).setResultsName("second_part")
 time_millisecond_part = (integer + millisecond).setResultsName("millisecond_part")
 
-time_expr = ((Optional(time_week_part) +
-              Optional(time_day_part) +
-              Optional(time_hour_part) +
-              Optional(time_minute_part) +
-              Optional(time_second_part) +
-              Optional(time_millisecond_part) +
-              AGO)
-             | NOW
-             ).setParseAction(convert_time)
+time_span = (Optional(time_week_part) +
+             Optional(time_day_part) +
+             Optional(time_hour_part) +
+             Optional(time_minute_part) +
+             Optional(time_second_part) +
+             Optional(time_millisecond_part)).setParseAction(convert_time_span)
+
+date_time_string = Regex(DATE_TIME).setResultsName("date_time_regex").setParseAction(convert_time)
+
+time_expr = ((time_span + AGO)
+             | date_time_string
+             | NOW.setParseAction(convert_time))
 
 number = (real | integer)       # Put real before integer to avoid ambiguity
 numeric = (time_expr | number)
@@ -446,6 +532,10 @@ between_predicate = (column_name + Optional(NOT) +
 range_op = oneOf("< <= >= >")
 range_predicate = (column_name + range_op + numeric).setResultsName("range_pred")
 
+time_predicate = ((column_name + IN + LAST + time_span)
+                  | (column_name + (SINCE | AFTER | BEFORE) + time_expr)
+                  ).setResultsName("time_pred")
+
 cumulative_predicate = Group(in_predicate
                              | equal_predicate
                              | between_predicate
@@ -464,6 +554,7 @@ predicate = Group(in_predicate
                   | query_predicate
                   | between_predicate
                   | range_predicate
+                  | time_predicate
                   | same_column_or_pred
                   ).setResultsName("predicates", listAllMatches=True)
 
@@ -522,7 +613,7 @@ select_stmt << (SELECT +
 describe_stmt = (DESC | DESCRIBE).setResultsName("describe") + ident.setResultsName("index")
 
 time_now = int(time.time() * 1000)
-BQLstmt = (select_stmt | describe_stmt) + Optional(SEMICOLON)
+BQLstmt = (select_stmt | describe_stmt) + Optional(SEMICOLON) + stringEnd
 
 # Define comment format, and ignore them
 sql_comment = "--" + restOfLine
@@ -705,6 +796,15 @@ def build_selection(predicate):
       low = predicate[2] + delta
     selection = SenseiSelection(predicate[0], PARAM_SELECT_OP_AND)
     selection.addSelection("[%s TO %s]" % (low, high))
+
+  elif predicate.time_pred:
+    selection = SenseiSelection(predicate[0], PARAM_SELECT_OP_AND)
+    if predicate[1] == IN.match and predicate[2] == LAST.match:
+      selection.addSelection("[%s TO %s]" % (predicate[3], "*"))
+    elif predicate[1] == SINCE.match or predicate[1] == AFTER.match:
+      selection.addSelection("[%s TO %s]" % (predicate[2] + 1, "*"))
+    elif predicate[1] == BEFORE.match:
+      selection.addSelection("[%s TO %s]" % ("*", predicate[2] - 1))
   
   elif predicate.same_column_or_pred:
     selection = collapse_cumulative_preds(predicate.cumulative_preds)
@@ -726,6 +826,10 @@ class BQLRequest:
       time_now = int(time.time() * 1000)
       self.tokens = BQLstmt.parseString(sql_stmt, parseAll=True)
     except ParseException as err:
+      raise err
+    except ParseSyntaxException as err:
+      raise err
+    except ParseFatalException as err:
       raise err
     finally:
       reset_all()
@@ -969,6 +1073,12 @@ def test(str):
       print "tokens.given.facet_param =", tokens.given.facet_param
     print "tokens.fetching_stored =", tokens.fetching_stored
   except ParseException as err:
+    # print " " * (err.loc + 2) + "^\n" + err.msg
+    pass
+  except ParseSyntaxException as err:
+    # print " " * (err.loc + 2) + "^\n" + err.msg
+    pass
+  except ParseFatalException as err:
     # print " " * (err.loc + 2) + "^\n" + err.msg
     pass
   finally:
@@ -1384,7 +1494,7 @@ class SenseiRequest:
     self.stmt_type = "unknown"
 
     if sql_stmt != None:
-      time1 = datetime.datetime.now()
+      time1 = datetime.now()
       bql_req = BQLRequest(sql_stmt)
       ok, msg = bql_req.merge_selections()
       if not ok:
@@ -1411,7 +1521,7 @@ class SenseiRequest:
         self.groupby = bql_req.get_groupby()
         self.max_per_group = bql_req.get_max_per_group() or max_per_group
         self.facet_init_param_map = bql_req.get_facet_init_param_map()
-        delta = datetime.datetime.now() - time1
+        delta = datetime.now() - time1
         self.prepare_time = delta.seconds * 1000 + delta.microseconds / 1000
         logger.debug("Prepare time: %sms" % self.prepare_time)
     else:
@@ -1729,7 +1839,7 @@ class SenseiClient:
   def doQuery(self, req=None):
     """Execute a search query."""
 
-    time1 = datetime.datetime.now()
+    time1 = datetime.now()
     paramString = None
     if req:
       paramString = SenseiClient.buildUrlString(req)
@@ -1739,7 +1849,7 @@ class SenseiClient:
     line = res.read()
     jsonObj = json.loads(line)
     res = SenseiResult(jsonObj)
-    delta = datetime.datetime.now() - time1
+    delta = datetime.now() - time1
     res.total_time = delta.seconds * 1000 + delta.microseconds / 1000
     return res
 
@@ -1802,6 +1912,10 @@ def main(argv):
     except EOFError:
       break
     except ParseException as err:
+      print " " * (err.loc + 2) + "^\n" + err.msg
+    except ParseSyntaxException as err:
+      print " " * (err.loc + 2) + "^\n" + err.msg
+    except ParseFatalException as err:
       print " " * (err.loc + 2) + "^\n" + err.msg
     except SenseiClientError as err:
       print err
