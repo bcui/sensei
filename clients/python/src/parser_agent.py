@@ -116,6 +116,8 @@ def construct_ucp_json(info, max_per_group=DEFAULT_REQUEST_MAX_PER_GROUP):
     sort_dict["sortOrder"] = sort.dir.upper()
     output_sorts.append(sort_dict)
 
+  
+
   output = {
     "name": info["name"],
     "description": info["description"],
@@ -123,7 +125,15 @@ def construct_ucp_json(info, max_per_group=DEFAULT_REQUEST_MAX_PER_GROUP):
       "urn": info["urn"],
       "auxParams": info["auxParams"]
       },
-    "bql": info["bql"],
+    "bqlQueryInfo":{
+      "bql": info["bql"],
+      "selectClause": {
+        "array": request.get_columns()
+        },
+      "fromClause": {
+        "array": [request.get_index()]
+        }
+      },
     "filters": {
       "com.linkedin.ucp.query.models.QueryFilters": {
         "keywords": {
@@ -133,7 +143,7 @@ def construct_ucp_json(info, max_per_group=DEFAULT_REQUEST_MAX_PER_GROUP):
           "array": output_selections
           }
         }
-      },
+      }
     }
 
   if output_facets:
