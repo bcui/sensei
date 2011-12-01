@@ -4,6 +4,7 @@
 <!ENTITY chap-getting-started SYSTEM "chap-getting-started.xml">
 <!ENTITY chap-demo SYSTEM "chap-demo.xml">
 <!ENTITY chap-indexing SYSTEM "chap-indexing.xml">
+<!ENTITY chap-hadoop-indexing SYSTEM "chap-hadoop-indexing.xml">
 <!ENTITY chap-searching SYSTEM "chap-searching.xml">
 <!ENTITY chap-configuration SYSTEM "chap-configuration.xml">
 <!ENTITY chap-bql SYSTEM "chap-bql.xml">
@@ -41,6 +42,8 @@
   &chap-demo;
 
   &chap-indexing;
+
+  &chap-hadoop-indexing;
 
   &chap-searching;
 
