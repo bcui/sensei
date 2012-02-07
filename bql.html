@@ -80,6 +80,7 @@ sections.</p>
               | &lt;time_predicate&gt;
               | &lt;match_predicate&gt;
               | &lt;like_predicate&gt;
+              | &lt;null_predicate&gt;
 
 &lt;in_predicate&gt; ::= &lt;column_name&gt; [NOT] IN &lt;value_list&gt; [&lt;except_clause&gt;]
                    [&lt;predicate_props&gt;]
@@ -103,6 +104,8 @@ sections.</p>
 &lt;match_predicate&gt; ::= [NOT] MATCH '(' column_name_list ')' AGAINST '(' quoted_string ')'
 
 &lt;like_predicate&gt; ::= &lt;column_name&gt; [NOT] LIKE &lt;quoted_string&gt;
+
+&lt;null_predicate&gt; ::= &lt;column_name&gt; IS [NOT] NULL
 
 &lt;value_list&gt; ::= '(' &lt;value&gt; ( ',' &lt;value&gt; )* ')'
 
@@ -131,7 +134,7 @@ sections.</p>
 
 &lt;facet_param_type&gt; ::= BOOLEAN | INT | LONG | STRING | BYTEARRAY | DOUBLE
 
-&lt;facet_param_value&gt; ::= &lt;quoted_string&gt;
+&lt;facet_param_value&gt; ::= &lt;value&gt; | &lt;value_list&gt;
 
 &lt;additional_clauses&gt; ::= ( &lt;additional_clause&gt; )+
 
