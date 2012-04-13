@@ -1769,7 +1769,8 @@ type
 	;
 
 class_or_interface_type
-	:	IDENT type_arguments? ('.' IDENT type_arguments? )*
+//	:	IDENT type_arguments? ('.' IDENT type_arguments? )*
+    :   ('Map' | 'Set') type_arguments? ('.' IDENT type_arguments? )*
 	;
 
 type_arguments
@@ -1848,6 +1849,7 @@ java_statement
     |   'if' par_expression java_statement (else_statement)?
     |   'while' par_expression java_statement
     |   'return' expression SEMI
+    |    statement_expression SEMI
     ;
 
 else_statement
@@ -1860,6 +1862,10 @@ par_expression
 
 expression_list
     :   expression (',' expression)*
+    ;
+
+statement_expression
+    :   expression
     ;
 
 expression
@@ -1909,8 +1915,8 @@ relational_op
     |   ('>' '=')=> t1='>' t2='=' 
         { $t1.getLine() == $t2.getLine() && 
           $t1.getCharPositionInLine() + 1 == $t2.getCharPositionInLine() }?
-    |   '<' 
-    |   '>' 
+    |   '<'
+    |   '>'
     ;
 
 shift_expression
