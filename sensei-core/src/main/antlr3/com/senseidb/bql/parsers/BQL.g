@@ -1813,8 +1813,11 @@ variableDeclaratorId
     :   IDENT ('[' ']')*
     ;
 
-relevance_model
+relevance_model returns [String functionBody]
     :   BEGIN model_block END
+        {
+            $functionBody = $model_block.text;
+        }
     ;
 
 model_block
@@ -1846,7 +1849,7 @@ java_statement
     :   block
     |   'if' par_expression java_statement (else_statement)?
     |   'while' par_expression java_statement
-    |   'return' INTEGER SEMI
+    |   'return' expression SEMI
     ;
 
 else_statement
@@ -2007,7 +2010,7 @@ relevance_model_clause returns [JSONObject json]
                 }
                 else {
                     JSONObject modelJson = new JSONObject();
-                    modelJson.put("function", $model.text);
+                    modelJson.put("function", $model.functionBody);
                     $json.put("model", modelJson);
                     $json.put("values", $prop_list.json);
                 }

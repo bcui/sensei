@@ -1281,6 +1281,10 @@ public class TestBQL extends TestCase
       "    int myInt = 100; " +
       "    if (srcid == myInt + 2) " +
       "      return 100; " +
+      "    else if (srcid > 200) " +
+      "      return 200; " +
+      "    else " +
+      "      return _INNER_SCORE; " +
       "  END "
       );
 
