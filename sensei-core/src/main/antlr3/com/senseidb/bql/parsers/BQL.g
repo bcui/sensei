@@ -6,6 +6,9 @@ options
   language = Java;
   // Generated parser should create abstract syntax tree
   output = AST;
+
+  backtrack = true;
+  memoize = true;
 }
 
 // Imaginary tokens
@@ -1869,7 +1872,7 @@ statement_expression
     ;
 
 expression
-    :   conditional_expression
+    :   conditional_expression ('=' expression)?
     ;
 
 conditional_expression

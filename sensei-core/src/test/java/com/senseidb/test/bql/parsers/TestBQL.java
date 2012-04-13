@@ -1331,6 +1331,7 @@ public class TestBQL extends TestCase
       "    int myInt = 100; " +
       "    while (myInt < 200) { " +
       "      myInt++; " +
+      "      myInt = myInt + 10; " +
       "    } " +
       "    return 100; " +
       "  END "
