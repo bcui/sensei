@@ -1737,8 +1737,7 @@ given_clause returns [JSONObject json]
 
 
 // =====================================================================
-// Relevance model stuff.  Here we are defining a subset of Java
-// language.
+// Relevance model related
 // =====================================================================
 
 variable_declarators
@@ -1765,6 +1764,8 @@ array_initializer
 type
 	:	class_or_interface_type ('[' ']')*
 	|	primitive_type ('[' ']')*
+    |   boxed_type ('[' ']')*
+    |   limited_type ('[' ']')*
 	;
 
 class_or_interface_type
@@ -1791,26 +1792,23 @@ primitive_type
     |   { "double".equals(input.LT(1).getText()) }? DOUBLE
     ;
 
+boxed_type
+    :   { "Boolean".equals(input.LT(1).getText()) }? BOOLEAN
+    |   'Character'
+    |   { "Byte".equals(input.LT(1).getText()) }? BYTE
+    |   'Short'
+    |   'Integer'
+    |   { "Long".equals(input.LT(1).getText()) }? LONG
+    |   'Float'
+    |   { "Double".equals(input.LT(1).getText()) }? DOUBLE
+    ;
+
+limited_type
+    :   { "String".equals(input.LT(1).getText()) }? STRING
+    ;
+
 variable_modifier
     :   'final'
-//    |   annotation
-    ;
-
-formalParameters
-    :   '(' formalParameterDecls? ')'
-    ;
-
-formalParameterDecls
-    :   type formalParameterDeclsRest
-    ;
-
-formalParameterDeclsRest
-    :   variableDeclaratorId (',' formalParameterDecls)?
-    |   '...' variableDeclaratorId
-    ;
-
-variableDeclaratorId
-    :   IDENT ('[' ']')*
     ;
 
 relevance_model returns [String functionBody]

@@ -1264,19 +1264,16 @@ public class TestBQL extends TestCase
   }
 
   @Test
-  public void testRelevanceModel21() throws Exception
+  public void testRelevanceModelIfStmt() throws Exception
   {
-    System.out.println("testRelevanceModel21");
+    System.out.println("testRelevanceModelIfStmt");
     System.out.println("==================================================");
 
-    try
-    {
-
     JSONObject json = _compiler.compile(
-      "SELECT color, year                                       \n" +
-      "FROM cars                                                \n" +
-      "WHERE color = 'red'                                      \n" +
-      "USING RELEVANCE MODEL my_model ('srcid':1234)            \n" +
+      "SELECT color, year " +
+      "FROM cars " +
+      "WHERE color = 'red' " +
+      "USING RELEVANCE MODEL my_model ('srcid':1234) " +
       "  BEGIN " +
       "    int myInt = 100; " +
       "    if (srcid == myInt + 2) " +
@@ -1288,18 +1285,37 @@ public class TestBQL extends TestCase
       "  END "
       );
 
+    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 100;     else if (srcid > 200)       return 200;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    assertTrue(_comp.isEquals(json, expected));
+  }
+
+  @Test
+  public void testRelevanceModelDataTypes() throws Exception
+  {
+    System.out.println("testRelevanceModelDataTypes");
+    System.out.println("==================================================");
+
+    JSONObject json = _compiler.compile(
+      "SELECT color, year " +
+      "FROM cars " +
+      "WHERE color = 'red' " +
+      "USING RELEVANCE MODEL my_model ('srcid':1234) " +
+      "  BEGIN " +
+      "    int myInt = 100; " +
+      "    String str1; " +
+      "    Integer int1, int2; " +
+      "    Byte byte1; " +
+      "    Set<Double> mySet1, mySet2; " +
+      "    Map<String, Double> myMap1; " +
+      "    return 100; " +
+      "  END "
+      );
+
     System.out.println(">>> json = " + json);
-
-
-    }
-    catch (Exception err)
-    {
-      System.out.println(">>> err = " + err);
-    }
-
-    // JSONObject expected = new JSONObject("");
+    // JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 100;     else if (srcid > 200)       return 200;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
     // assertTrue(_comp.isEquals(json, expected));
   }
+
 
   @Test
   public void testRelevanceModel2() throws Exception
@@ -1314,7 +1330,6 @@ public class TestBQL extends TestCase
       "USING RELEVANCE MODEL my_model ('srcid':1234)            \n" +
       "  BEGIN                                                  \n" +
       "    int myInt = 100;                                     \n" +
-      "    String myStr;                                        \n" +
       "    if (srcid == myInt + 2)                              \n" +
       "      return 0.25f;                                      \n" +
       "    else                                                 \n" +
