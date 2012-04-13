@@ -494,15 +494,19 @@ AGO : ('A'|'a')('G'|'g')('O'|'o') ;
 AND : ('A'|'a')('N'|'n')('D'|'d') ;
 ASC : ('A'|'a')('S'|'s')('C'|'c') ;
 BEFORE : ('B'|'b')('E'|'e')('F'|'f')('O'|'o')('R'|'r')('E'|'e') ;
+BEGIN : ('B'|'b')('E'|'e')('G'|'g')('I'|'i')('N'|'n') ;
 BETWEEN : ('B'|'b')('E'|'e')('T'|'t')('W'|'w')('E'|'e')('E'|'e')('N'|'n') ;
 BOOLEAN : ('B'|'b')('O'|'o')('O'|'o')('L'|'l')('E'|'e')('A'|'a')('N'|'n') ;
 BROWSE : ('B'|'b')('R'|'r')('O'|'o')('W'|'w')('S'|'s')('E'|'e') ;
 BY : ('B'|'b')('Y'|'y') ;
+BYTE : ('B'|'b')('Y'|'y')('T'|'t')('E'|'e') ;
 BYTEARRAY : ('B'|'b')('Y'|'y')('T'|'t')('E'|'e')('A'|'a')('R'|'r')('R'|'r')('A'|'a')('Y'|'y') ;
 CONTAINS : ('C'|'c')('O'|'o')('N'|'n')('T'|'t')('A'|'a')('I'|'i')('N'|'n')('S'|'s') ;
 DESC : ('D'|'d')('E'|'e')('S'|'s')('C'|'c') ;
 DESCRIBE : ('D'|'d')('E'|'e')('S'|'s')('C'|'c')('R'|'r')('I'|'i')('B'|'b')('E'|'e') ;
 DOUBLE : ('D'|'d')('O'|'o')('U'|'u')('B'|'b')('L'|'l')('E'|'e') ;
+ELSE : ('E'|'e')('L'|'l')('S'|'s')('E'|'e') ;
+END : ('E'|'e')('N'|'n')('D'|'d') ;
 EXCEPT : ('E'|'e')('X'|'x')('C'|'c')('E'|'e')('P'|'p')('T'|'t') ;
 FACET : ('F'|'f')('A'|'a')('C'|'c')('E'|'e')('T'|'t') ;
 FALSE : ('F'|'f')('A'|'a')('L'|'l')('S'|'s')('E'|'e') ;
@@ -771,7 +775,7 @@ column_name_list returns [boolean fetchStored, JSONArray json]
         }
         (COMMA col=column_name
             {
-                colName = $col.text;
+                String colName = $col.text;
                 if (colName != null) {
                     $json.put($col.text); 
                     if ("_srcdata".equals(colName) || colName.startsWith("_srcdata.")) {
@@ -869,7 +873,7 @@ or_column_name_list returns [JSONArray json]
         }
         (OR col=column_name
             {
-                colName = $col.text;
+                String colName = $col.text;
                 if (colName != null) {
                     $json.put($col.text); 
                 }
@@ -1731,6 +1735,272 @@ given_clause returns [JSONObject json]
         }
     ;
 
+
+// =====================================================================
+// Relevance model stuff.  Here we are defining a subset of Java
+// language.
+// =====================================================================
+
+variable_declarators
+    :   variable_declarator (',' variable_declarator)*
+    ;
+
+variable_declarator
+    :   variable_declarator_id ('=' variable_initializer)?
+    ;
+
+variable_declarator_id
+    :   IDENT ('[' ']')*
+    ;
+
+variable_initializer
+    :   array_initializer
+    |   expression
+    ;
+
+array_initializer
+    :   '{' (variable_initializer (',' variable_initializer)* (',')?)? '}'
+    ;
+
+type
+	:	class_or_interface_type ('[' ']')*
+	|	primitive_type ('[' ']')*
+	;
+
+class_or_interface_type
+	:	IDENT type_arguments? ('.' IDENT type_arguments? )*
+	;
+
+type_arguments
+    :   '<' type_argument (',' type_argument)* '>'
+    ;
+
+type_argument
+    :   type
+    |   '?' (('extends' | 'super') type)?
+    ;
+
+primitive_type
+    :   { "boolean".equals(input.LT(1).getText()) }? BOOLEAN
+    |   'char'
+    |   { "byte".equals(input.LT(1).getText()) }? BYTE
+    |   'short'
+    |   { "int".equals(input.LT(1).getText()) }? INT
+    |   { "long".equals(input.LT(1).getText()) }? LONG
+    |   'float'
+    |   { "double".equals(input.LT(1).getText()) }? DOUBLE
+    ;
+
+variable_modifier
+    :   'final'
+//    |   annotation
+    ;
+
+formalParameters
+    :   '(' formalParameterDecls? ')'
+    ;
+
+formalParameterDecls
+    :   type formalParameterDeclsRest
+    ;
+
+formalParameterDeclsRest
+    :   variableDeclaratorId (',' formalParameterDecls)?
+    |   '...' variableDeclaratorId
+    ;
+
+variableDeclaratorId
+    :   IDENT ('[' ']')*
+    ;
+
+relevance_model
+    :   BEGIN model_block END
+    ;
+
+model_block
+    :   block_statement+
+    ;
+
+block
+    :   '{' block_statement* '}'
+    ;
+
+block_statement
+    :   local_variable_declaration_stmt
+    |   java_statement
+    ;
+
+local_variable_declaration_stmt
+    :   local_variable_declaration SEMI
+    ;
+
+local_variable_declaration
+    :   variable_modifier type variable_declarators
+    ;
+
+variable_modifiers
+    :   variable_modifier*
+    ;
+
+java_statement
+    :   block
+    |   'if' par_expression java_statement (else_statement)?
+    |   'while' par_expression java_statement
+    |   'return' INTEGER? SEMI
+    ;
+
+else_statement
+    :   { "else".equals(input.LT(1).getText()) }? ELSE java_statement
+    ;
+
+par_expression
+    :   LPAR expression RPAR
+    ;
+
+expression_list
+    :   expression (',' expression)*
+    ;
+
+expression
+    :   conditional_expression
+    ;
+
+conditional_expression
+    :   conditional_or_expression ( '?' expression ':' expression )?
+    ;
+
+conditional_or_expression
+    :   conditional_and_expression ( '||' conditional_and_expression )*
+    ;
+
+conditional_and_expression
+    :   inclusive_or_expression ('&&' inclusive_or_expression )*
+    ;
+
+inclusive_or_expression
+    :   exclusive_or_expression ('|' exclusive_or_expression )*
+    ;
+
+exclusive_or_expression
+    :   and_expression ('^' and_expression )*
+    ;
+
+and_expression
+    :   equality_expression ( '&' equality_expression )*
+    ;
+
+equality_expression
+    :   instanceof_expression ( ('==' | '!=') instanceof_expression )*
+    ;
+
+instanceof_expression
+    :   relational_expression ('instanceof' type)?
+    ;
+
+relational_expression
+    :   shift_expression ( relational_op shift_expression )*
+    ;
+
+relational_op
+    :   ('<' '=')=> t1='<' t2='=' 
+        { $t1.getLine() == $t2.getLine() && 
+          $t1.getCharPositionInLine() + 1 == $t2.getCharPositionInLine() }?
+    |   ('>' '=')=> t1='>' t2='=' 
+        { $t1.getLine() == $t2.getLine() && 
+          $t1.getCharPositionInLine() + 1 == $t2.getCharPositionInLine() }?
+    |   '<' 
+    |   '>' 
+    ;
+
+shift_expression
+    :   additive_expression ( shift_op additive_expression )*
+    ;
+
+shift_op
+    :   ('<' '<')=> t1='<' t2='<' 
+        { $t1.getLine() == $t2.getLine() && 
+          $t1.getCharPositionInLine() + 1 == $t2.getCharPositionInLine() }?
+    |   ('>' '>' '>')=> t1='>' t2='>' t3='>' 
+        { $t1.getLine() == $t2.getLine() && 
+          $t1.getCharPositionInLine() + 1 == $t2.getCharPositionInLine() &&
+          $t2.getLine() == $t3.getLine() && 
+          $t2.getCharPositionInLine() + 1 == $t3.getCharPositionInLine() }?
+    |   ('>' '>')=> t1='>' t2='>'
+        { $t1.getLine() == $t2.getLine() && 
+          $t1.getCharPositionInLine() + 1 == $t2.getCharPositionInLine() }?
+    ;
+
+additive_expression
+    :   multiplicative_expression ( ('+' | '-') multiplicative_expression )*
+    ;
+
+multiplicative_expression
+    :   unary_expression ( ( '*' | '/' | '%' ) unary_expression )*
+    ;
+    
+unary_expression
+    :   '+' unary_expression
+    |   '-' unary_expression
+    |   '++' unary_expression
+    |   '--' unary_expression
+    |   unary_expression_not_plus_minus
+    ;
+
+unary_expression_not_plus_minus
+    :   '~' unary_expression
+    |   '!' unary_expression
+//  |   cast_expression
+    |   primary selector* ('++'|'--')?
+    ;
+
+//cast_expression
+//    :  '(' primitive_type ')' unary_expression
+//    |  '(' (type | expression) ')' unary_expression_not_plus_minus
+//    ;
+
+primary
+    :   par_expression
+//  |   'this' ('.' IDENT)* identifier_suffix?
+//  |   'super' super_suffix
+    |   literal
+//  |   'new' creator
+//  |   IDENT ('.' IDENT)* identifier_suffix?
+//  |   primitive_type ('[' ']')* '.' 'class'
+    |   'void' '.' 'class'
+    ;
+
+//identifier_suffix
+//    :   ('[' ']')+ '.' 'class'
+//    |   ('[' expression ']')+ // can also be matched by selector, but do here
+//    |   arguments
+//    |   '.' 'class'
+//    |   '.' explicitGenericInvocation
+//    |   '.' 'this'
+//    |   '.' 'super' arguments
+//    |   '.' 'new' innerCreator
+//    ;
+
+literal 
+    :   INTEGER
+//    |   FloatingPointLiteral
+//    |   CharacterLiteral
+//    |   StringLiteral
+//    |   booleanLiteral
+    |   { "null".equals(input.LT(1).getText()) }? 'null'
+    ;
+
+selector
+    :   '.' IDENT arguments?
+    |   '.' 'this'
+//    |   '.' 'super' superSuffix
+//    |   '.' 'new' innerCreator
+    |   '[' expression ']'
+    ;
+
+arguments
+    :   '(' expression_list? ')'
+    ;
+    
 relevance_model_clause returns [JSONObject json]
 @init {
     $json = new JSONObject();

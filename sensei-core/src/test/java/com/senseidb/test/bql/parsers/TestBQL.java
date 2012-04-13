@@ -1263,4 +1263,62 @@ public class TestBQL extends TestCase
     assertTrue(_comp.isEquals(json, expected));
   }
 
+  @Test
+  public void testRelevanceModel21() throws Exception
+  {
+    System.out.println("testRelevanceModel21");
+    System.out.println("==================================================");
+
+    try
+    {
+
+    JSONObject json = _compiler.compile(
+      "SELECT color, year                                       \n" +
+      "FROM cars                                                \n" +
+      "WHERE color = 'red'                                      \n" +
+      "USING RELEVANCE MODEL my_model ('srcid':1234)            \n" +
+      "  BEGIN                                                  \n" +
+      "      return 20;                                         \n" +
+      "  END                                                    \n"
+      );
+
+    System.out.println(">>> json = " + json);
+
+
+    }
+    catch (Exception err)
+    {
+      System.out.println(">>> err = " + err);
+    }
+
+    // JSONObject expected = new JSONObject("");
+    // assertTrue(_comp.isEquals(json, expected));
+  }
+
+  @Test
+  public void testRelevanceModel2() throws Exception
+  {
+    System.out.println("testRelevanceModel2");
+    System.out.println("==================================================");
+
+    JSONObject json = _compiler.compile(
+      "SELECT color, year                                       \n" +
+      "FROM cars                                                \n" +
+      "WHERE color = 'red'                                      \n" +
+      "USING RELEVANCE MODEL my_model ('srcid':1234)            \n" +
+      "  BEGIN                                                  \n" +
+      "    int myInt = 100;                                     \n" +
+      "    String myStr;                                        \n" +
+      "    if (srcid == myInt + 2)                              \n" +
+      "      return 0.25f;                                      \n" +
+      "    else                                                 \n" +
+      "      return 0.10f;                                      \n" +
+      "  END                                                    \n"
+      );
+
+    System.out.println(">>> json = " + json);
+    // JSONObject expected = new JSONObject("");
+    // assertTrue(_comp.isEquals(json, expected));
+  }
+
 }
