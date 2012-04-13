@@ -1277,9 +1277,11 @@ public class TestBQL extends TestCase
       "FROM cars                                                \n" +
       "WHERE color = 'red'                                      \n" +
       "USING RELEVANCE MODEL my_model ('srcid':1234)            \n" +
-      "  BEGIN                                                  \n" +
-      "      return 20;                                         \n" +
-      "  END                                                    \n"
+      "  BEGIN " +
+      "    int myInt = 100; " +
+      "    if (srcid == myInt + 2) " +
+      "      return 100; " +
+      "  END "
       );
 
     System.out.println(">>> json = " + json);

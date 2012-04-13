@@ -1835,7 +1835,7 @@ local_variable_declaration_stmt
     ;
 
 local_variable_declaration
-    :   variable_modifier type variable_declarators
+    :   variable_modifiers type variable_declarators
     ;
 
 variable_modifiers
@@ -1846,7 +1846,7 @@ java_statement
     :   block
     |   'if' par_expression java_statement (else_statement)?
     |   'while' par_expression java_statement
-    |   'return' INTEGER? SEMI
+    |   'return' INTEGER SEMI
     ;
 
 else_statement
@@ -1960,25 +1960,18 @@ unary_expression_not_plus_minus
 
 primary
     :   par_expression
-//  |   'this' ('.' IDENT)* identifier_suffix?
-//  |   'super' super_suffix
     |   literal
-//  |   'new' creator
-//  |   IDENT ('.' IDENT)* identifier_suffix?
-//  |   primitive_type ('[' ']')* '.' 'class'
-    |   'void' '.' 'class'
+    |   IDENT
     ;
 
-//identifier_suffix
-//    :   ('[' ']')+ '.' 'class'
-//    |   ('[' expression ']')+ // can also be matched by selector, but do here
-//    |   arguments
+identifier_suffix
+    :   arguments
 //    |   '.' 'class'
 //    |   '.' explicitGenericInvocation
 //    |   '.' 'this'
 //    |   '.' 'super' arguments
 //    |   '.' 'new' innerCreator
-//    ;
+    ;
 
 literal 
     :   INTEGER
@@ -2005,11 +1998,19 @@ relevance_model_clause returns [JSONObject json]
 @init {
     $json = new JSONObject();
 }
-    :   USING RELEVANCE MODEL IDENT prop_list
+    :   USING RELEVANCE MODEL IDENT prop_list model=relevance_model?
         {
             try {
-                $json.put("predefined_model", $IDENT.text);
-                $json.put("values", $prop_list.json);
+                if (model == null) {
+                    $json.put("predefined_model", $IDENT.text);
+                    $json.put("values", $prop_list.json);
+                }
+                else {
+                    JSONObject modelJson = new JSONObject();
+                    modelJson.put("function", $model.text);
+                    $json.put("model", modelJson);
+                    $json.put("values", $prop_list.json);
+                }
             }
             catch (JSONException err) {
                 throw new FailedPredicateException(input, "relevance_model_clause",
