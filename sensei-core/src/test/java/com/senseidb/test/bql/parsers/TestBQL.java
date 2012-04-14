@@ -1368,27 +1368,28 @@ public class TestBQL extends TestCase
   }
 
   @Test
-  public void testRelevanceModel2() throws Exception
+  public void testRelevanceModelExpressions() throws Exception
   {
-    System.out.println("testRelevanceModel2");
+    System.out.println("testRelevanceModelExpressions");
     System.out.println("==================================================");
 
     JSONObject json = _compiler.compile(
-      "SELECT color, year                                       \n" +
-      "FROM cars                                                \n" +
-      "WHERE color = 'red'                                      \n" +
-      "USING RELEVANCE MODEL my_model ('srcid':1234)            \n" +
-      "  BEGIN                                                  \n" +
-      "    int myInt = 100;                                     \n" +
-      "    if (srcid == myInt + 2)                              \n" +
-      "      return 0.25f;                                      \n" +
-      "    else                                                 \n" +
-      "      return 0.10f;                                      \n" +
-      "  END                                                    \n"
+      "SELECT color, year " +
+      "FROM cars " +
+      "WHERE color = 'red' " +
+      "USING RELEVANCE MODEL my_model ('srcid':1234, 'timeVal':9999, '_half_time':8888) " +
+      "  BEGIN " +
+      "    int myInt = 0; " +
+      "    float delta = System.currentTimeMillis() - timeVal; " +
+      "    float t = delta > 0 ? delta : 0; " +
+      "    float numHours = t / (1000 * 3600); " +
+      "    float timeScore = Math.exp(-(numHours/_half_time)); " +
+      "    return timeScore; " +
+      "  END "
       );
 
     System.out.println(">>> json = " + json);
-    // JSONObject expected = new JSONObject("");
+    // JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 100;     else if (srcid > 200)       return 200;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
     // assertTrue(_comp.isEquals(json, expected));
   }
 
