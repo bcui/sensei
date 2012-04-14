@@ -1383,7 +1383,7 @@ public class TestBQL extends TestCase
       "    float delta = System.currentTimeMillis() - timeVal; " +
       "    float t = delta > 0 ? delta : 0; " +
       "    float numHours = t / (1000 * 3600); " +
-      "    float timeScore = Math.exp(-(numHours/_half_time)); " +
+      "    float timeScore = (float) Math.exp(-(numHours/_half_time)); " +
       "    return timeScore; " +
       "  END "
       );

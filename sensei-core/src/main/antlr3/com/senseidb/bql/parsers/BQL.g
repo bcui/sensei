@@ -1979,14 +1979,14 @@ unary_expression
 unary_expression_not_plus_minus
     :   '~' unary_expression
     |   '!' unary_expression
-//  |   cast_expression
+    |   cast_expression
     |   primary selector* ('++'|'--')?
     ;
 
-//cast_expression
-//    :  '(' primitive_type ')' unary_expression
-//    |  '(' (type | expression) ')' unary_expression_not_plus_minus
-//    ;
+cast_expression
+    :  '(' primitive_type ')' unary_expression
+    |  '(' (type | expression) ')' unary_expression_not_plus_minus
+    ;
 
 primary
     :   par_expression
