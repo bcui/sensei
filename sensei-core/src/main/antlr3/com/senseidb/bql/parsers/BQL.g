@@ -1853,13 +1853,30 @@ java_statement
     |   'for' LPAR for_control RPAR java_statement
     |   'while' par_expression java_statement
     |   'do' java_statement 'while' par_expression SEMI
-//    |   'switch' par_expression '{' switchBlockStatementGroups '}'
+    |   'switch' par_expression '{' switch_block_statement_groups '}'
     |   'return' expression SEMI
+    |   'break' IDENT? SEMI
+    |   'continue' IDENT? SEMI
+    |   SEMI
     |    statement_expression SEMI
     ;
 
 else_statement
     :   { "else".equals(input.LT(1).getText()) }? ELSE java_statement
+    ;
+
+switch_block_statement_groups
+    :   (switch_block_statement_group)*
+    ;
+
+switch_block_statement_group
+    :   switch_label+ block_statement*
+    ;
+
+switch_label
+    :   'case' constant_expression COLON
+    |   'case' enum_constant_name COLON
+    |   'default' COLON
     ;
 
 for_control
@@ -1891,6 +1908,14 @@ expression_list
 
 statement_expression
     :   expression
+    ;
+
+constant_expression
+    :   expression
+    ;
+
+enum_constant_name
+    :   IDENT
     ;
 
 expression
