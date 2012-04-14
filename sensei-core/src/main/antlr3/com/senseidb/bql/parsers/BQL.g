@@ -443,7 +443,7 @@ import java.text.SimpleDateFormat;
 fragment DIGIT : '0'..'9' ;
 fragment ALPHA : 'a'..'z' | 'A'..'Z' ;
 
-INTEGER : DIGIT+ ;
+INTEGER : ('0' | '1'..'9' '0'..'9'*) INTEGER_TYPE_SUFFIX? ;
 REAL : DIGIT+ '.' DIGIT+ ;
 LPAR : '(' ;
 RPAR : ')' ;
@@ -485,6 +485,49 @@ TIME
     :
         DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT
     ;
+
+//
+// BQL Relevance model related
+//
+
+fragment HEX_DIGIT : ('0'..'9'|'a'..'f'|'A'..'F') ;
+fragment INTEGER_TYPE_SUFFIX: ('l' | 'L') ;
+fragment EXPONENT : ('e'|'E') ('+'|'-')? ('0'..'9')+ ;
+fragment FLOAT_TYPE_SUFFIX : ('f'|'F'|'d'|'D') ;
+
+fragment
+ESCAPE_SEQUENCE
+    :   '\\' ('b'|'t'|'n'|'f'|'r'|'\"'|'\''|'\\')
+    |   UNICODE_ESCAPE
+    |   OCTAL_ESCAPE
+    ;
+
+fragment
+UNICODE_ESCAPE
+    :   '\\' 'u' HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
+    ;
+
+fragment
+OCTAL_ESCAPE
+    :   '\\' ('0'..'3') ('0'..'7') ('0'..'7')
+    |   '\\' ('0'..'7') ('0'..'7')
+    |   '\\' ('0'..'7')
+    ;
+
+HEX_LITERAL : '0' ('x'|'X') HEX_DIGIT+ INTEGER_TYPE_SUFFIX? ;
+OCTAL_LITERAL : '0' ('0'..'7')+ INTEGER_TYPE_SUFFIX? ;
+
+FLOATING_POINT_LITERAL
+    :   ('0'..'9')+ '.' ('0'..'9')* EXPONENT? FLOAT_TYPE_SUFFIX?
+    |   '.' ('0'..'9')+ EXPONENT? FLOAT_TYPE_SUFFIX?
+    |   ('0'..'9')+ EXPONENT FLOAT_TYPE_SUFFIX?
+    |   ('0'..'9')+ FLOAT_TYPE_SUFFIX
+    ;
+
+CHARACTER_LITERAL
+    :   '\'' ( ESCAPE_SEQUENCE | ~('\''|'\\') ) '\''
+    ;
+
 
 //
 // BQL Keywords
@@ -2068,12 +2111,23 @@ identifier_suffix
     ;
 
 literal 
-    :   INTEGER
-//    |   FloatingPointLiteral
-//    |   CharacterLiteral
-//    |   StringLiteral
-//    |   booleanLiteral
+    :   integer_literal
+    |   FLOATING_POINT_LITERAL
+    |   CHARACTER_LITERAL
+    |   STRING_LITERAL
+    |   boolean_literal
     |   { "null".equals(input.LT(1).getText()) }? NULL
+    ;
+
+integer_literal
+    :   HEX_LITERAL
+    |   OCTAL_LITERAL
+    |   INTEGER
+    ;
+
+boolean_literal
+    :   { "true".equals(input.LT(1).getText()) }? TRUE
+    |   { "false".equals(input.LT(1).getText()) }? FALSE
     ;
 
 selector

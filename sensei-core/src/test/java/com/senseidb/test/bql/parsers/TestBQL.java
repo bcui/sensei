@@ -1303,7 +1303,12 @@ public class TestBQL extends TestCase
       "  BEGIN " +
       "    int myInt = 100; " +
       "    String str1; " +
+      "    String str2 = 'abcd' ; " +
+      "    char ch = 'c'; " +
       "    Integer int1, int2; " +
+      "    int int3 = 0L, int4 = 1234l; " +
+      "    float f1 = 1.23f, f2 = 1.23F; " +
+      "    float e1 = 2e+1234; " +
       "    Byte byte1; " +
       "    Set<Double> mySet1, mySet2; " +
       "    Map<String, Double> myMap1; " +
