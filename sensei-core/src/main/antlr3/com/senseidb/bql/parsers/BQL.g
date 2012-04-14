@@ -1850,6 +1850,7 @@ variable_modifiers
 java_statement
     :   block
     |   'if' par_expression java_statement (else_statement)?
+    |   'for' LPAR for_control RPAR java_statement
     |   'while' par_expression java_statement
     |   'return' expression SEMI
     |    statement_expression SEMI
@@ -1857,6 +1858,25 @@ java_statement
 
 else_statement
     :   { "else".equals(input.LT(1).getText()) }? ELSE java_statement
+    ;
+
+for_control
+options {k=3;}
+    :   enhanced_for_control
+    |   for_init? SEMI expression? SEMI for_update?
+    ;
+
+for_init
+    :   local_variable_declaration
+    |   expression_list
+    ;
+
+enhanced_for_control
+    :   variable_modifiers type IDENT COLON expression
+    ;
+
+for_update
+    :   expression_list
     ;
 
 par_expression
