@@ -1343,6 +1343,31 @@ public class TestBQL extends TestCase
   }
 
   @Test
+  public void testRelevanceModelDoWhile() throws Exception
+  {
+    System.out.println("testRelevanceModelDoWhile");
+    System.out.println("==================================================");
+
+    JSONObject json = _compiler.compile(
+      "SELECT color, year " +
+      "FROM cars " +
+      "WHERE color = 'red' " +
+      "USING RELEVANCE MODEL my_model ('srcid':1234) " +
+      "  BEGIN " +
+      "    int myInt = 100; " +
+      "    do { " +
+      "      myInt = myInt + 10; " +
+      "    } while (myInt < 100); " +
+      "    return 100; " +
+      "  END "
+      );
+
+    System.out.println(">>> json = " + json);
+    // JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 100;     else if (srcid > 200)       return 200;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    // assertTrue(_comp.isEquals(json, expected));
+  }
+
+  @Test
   public void testRelevanceModelForLoop() throws Exception
   {
     System.out.println("testRelevanceModelForLoop");
@@ -1384,6 +1409,8 @@ public class TestBQL extends TestCase
       "    float t = delta > 0 ? delta : 0; " +
       "    float numHours = t / (1000 * 3600); " +
       "    float timeScore = (float) Math.exp(-(numHours/_half_time)); " +
+      "    if (tags.contains(coolTag)) " +
+      "      return 999999; " +
       "    return timeScore; " +
       "  END "
       );

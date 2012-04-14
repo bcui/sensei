@@ -1852,6 +1852,8 @@ java_statement
     |   'if' par_expression java_statement (else_statement)?
     |   'for' LPAR for_control RPAR java_statement
     |   'while' par_expression java_statement
+    |   'do' java_statement 'while' par_expression SEMI
+//    |   'switch' par_expression '{' switchBlockStatementGroups '}'
     |   'return' expression SEMI
     |    statement_expression SEMI
     ;
@@ -1991,15 +1993,24 @@ cast_expression
 primary
     :   par_expression
     |   literal
+    |   IDENT ('.' java_method)* identifier_suffix?
+    ;
+
+
+// Need to handle the conflicts of BQL keywords and common Java method
+// names supported by BQL.
+java_method
+    :   { "contains".equals(input.LT(1).getText()) }? CONTAINS
     |   IDENT
     ;
 
 identifier_suffix
-    :   arguments
-//    |   '.' 'class'
+    :   ('[' ']')+ '.' 'class'
+    |   arguments
+    |   '.' 'class'
 //    |   '.' explicitGenericInvocation
-//    |   '.' 'this'
-//    |   '.' 'super' arguments
+    |   '.' 'this'
+    |   '.' 'super' arguments
 //    |   '.' 'new' innerCreator
     ;
 
@@ -2009,7 +2020,7 @@ literal
 //    |   CharacterLiteral
 //    |   StringLiteral
 //    |   booleanLiteral
-    |   { "null".equals(input.LT(1).getText()) }? 'null'
+    |   { "null".equals(input.LT(1).getText()) }? NULL
     ;
 
 selector
