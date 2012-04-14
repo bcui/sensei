@@ -1441,6 +1441,9 @@ public class TestBQL extends TestCase
       "    float timeScore = (float) Math.exp(-(numHours/_half_time)); " +
       "    if (tags.contains(coolTag)) " +
       "      return 999999; " +
+      "    int x = 0; " +
+      "    x += 5; " +
+      "    x *= 10; " +
       "    return timeScore; " +
       "  END "
       );

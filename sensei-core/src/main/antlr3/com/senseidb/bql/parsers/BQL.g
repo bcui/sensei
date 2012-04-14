@@ -1919,7 +1919,36 @@ enum_constant_name
     ;
 
 expression
-    :   conditional_expression ('=' expression)?
+    :   conditional_expression (assignment_operator expression)?
+    ;
+
+assignment_operator
+    :   '='
+    |   '+='
+    |   '-='
+    |   '*='
+    |   '/='
+    |   '&='
+    |   '|='
+    |   '^='
+    |   '%='
+    |   ('<' '<' '=')=> t1='<' t2='<' t3='=' 
+        { $t1.getLine() == $t2.getLine() &&
+          $t1.getCharPositionInLine() + 1 == $t2.getCharPositionInLine() && 
+          $t2.getLine() == $t3.getLine() && 
+          $t2.getCharPositionInLine() + 1 == $t3.getCharPositionInLine() }?
+    |   ('>' '>' '>' '=')=> t1='>' t2='>' t3='>' t4='='
+        { $t1.getLine() == $t2.getLine() && 
+          $t1.getCharPositionInLine() + 1 == $t2.getCharPositionInLine() &&
+          $t2.getLine() == $t3.getLine() && 
+          $t2.getCharPositionInLine() + 1 == $t3.getCharPositionInLine() &&
+          $t3.getLine() == $t4.getLine() && 
+          $t3.getCharPositionInLine() + 1 == $t4.getCharPositionInLine() }?
+    |   ('>' '>' '=')=> t1='>' t2='>' t3='='
+        { $t1.getLine() == $t2.getLine() && 
+          $t1.getCharPositionInLine() + 1 == $t2.getCharPositionInLine() && 
+          $t2.getLine() == $t3.getLine() && 
+          $t2.getCharPositionInLine() + 1 == $t3.getCharPositionInLine() }?
     ;
 
 conditional_expression
@@ -2020,7 +2049,6 @@ primary
     |   literal
     |   IDENT ('.' java_method)* identifier_suffix?
     ;
-
 
 // Need to handle the conflicts of BQL keywords and common Java method
 // names supported by BQL.
