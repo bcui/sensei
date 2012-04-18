@@ -1274,6 +1274,7 @@ public class TestBQL extends TestCase
       "FROM cars " +
       "WHERE color = 'red' " +
       "USING RELEVANCE MODEL my_model ('srcid':1234) " +
+      "  DEFINED AS (int intParam1, int intParam2, String strParam) " +
       "  BEGIN " +
       "    int myInt = 100; " +
       "    if (srcid == myInt + 2) " +
@@ -1300,6 +1301,7 @@ public class TestBQL extends TestCase
       "FROM cars " +
       "WHERE color = 'red' " +
       "USING RELEVANCE MODEL my_model ('srcid':1234) " +
+      "  DEFINED AS (int intParam1, int intParam2, String strParam) " +
       "  BEGIN " +
       "    int myInt = 100; " +
       "    String str1; " +
@@ -1332,6 +1334,7 @@ public class TestBQL extends TestCase
       "FROM cars " +
       "WHERE color = 'red' " +
       "USING RELEVANCE MODEL my_model ('srcid':1234) " +
+      "  DEFINED AS (int intParam1, int intParam2, String strParam) " +
       "  BEGIN " +
       "    int myInt = 100; " +
       "    while (myInt < 200) { " +
@@ -1358,6 +1361,7 @@ public class TestBQL extends TestCase
       "FROM cars " +
       "WHERE color = 'red' " +
       "USING RELEVANCE MODEL my_model ('srcid':1234) " +
+      "  DEFINED AS (int intParam1, int intParam2, String strParam) " +
       "  BEGIN " +
       "    int myInt = 100; " +
       "    do { " +
@@ -1383,6 +1387,7 @@ public class TestBQL extends TestCase
       "FROM cars " +
       "WHERE color = 'red' " +
       "USING RELEVANCE MODEL my_model ('srcid':1234) " +
+      "  DEFINED AS (int intParam1, int intParam2, String strParam) " +
       "  BEGIN " +
       "    int myInt = 0; " +
       "    for (int i = 0; i < 100; i++) { " +
@@ -1408,6 +1413,7 @@ public class TestBQL extends TestCase
       "FROM cars " +
       "WHERE color = 'red' " +
       "USING RELEVANCE MODEL my_model ('srcid':1234) " +
+      "  DEFINED AS (int intParam1, int intParam2, String strParam) " +
       "  BEGIN " +
       "    int myInt = 0; " +
       "    switch (myInt) { " +
@@ -1438,6 +1444,39 @@ public class TestBQL extends TestCase
       "FROM cars " +
       "WHERE color = 'red' " +
       "USING RELEVANCE MODEL my_model ('srcid':1234, 'timeVal':9999, '_half_time':8888) " +
+      "  DEFINED AS (int intParam1, int intParam2, String strParam) " +
+      "  BEGIN " +
+      "    int myInt = 0; " +
+      "    float delta = System.currentTimeMillis() - timeVal; " +
+      "    float t = delta > 0 ? delta : 0; " +
+      "    float numHours = t / (1000 * 3600); " +
+      "    float timeScore = (float) Math.exp(-(numHours/_half_time)); " +
+      "    if (tags.contains(coolTag)) " +
+      "      return 999999; " +
+      "    int x = 0; " +
+      "    x += 5; " +
+      "    x *= 10; " +
+      "    return timeScore; " +
+      "  END "
+      );
+
+    System.out.println(">>> json = " + json);
+    // JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 100;     else if (srcid > 200)       return 200;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    // assertTrue(_comp.isEquals(json, expected));
+  }
+
+  @Test
+  public void testRelevanceModelParameters() throws Exception
+  {
+    System.out.println("testRelevanceModelParameters");
+    System.out.println("==================================================");
+
+    JSONObject json = _compiler.compile(
+      "SELECT color, year " +
+      "FROM cars " +
+      "WHERE color = 'red' " +
+      "USING RELEVANCE MODEL my_model ('srcid':1234, 'timeVal':9999, '_half_time':8888) " +
+      "  DEFINED AS (int intParam1, int intParam2, String strParam) " +
       "  BEGIN " +
       "    int myInt = 0; " +
       "    float delta = System.currentTimeMillis() - timeVal; " +

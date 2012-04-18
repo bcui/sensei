@@ -538,6 +538,7 @@ AFTER : ('A'|'a')('F'|'f')('T'|'t')('E'|'e')('R'|'r') ;
 AGAINST : ('A'|'a')('G'|'g')('A'|'a')('I'|'i')('N'|'n')('S'|'s')('T'|'t') ;
 AGO : ('A'|'a')('G'|'g')('O'|'o') ;
 AND : ('A'|'a')('N'|'n')('D'|'d') ;
+AS : ('A'|'a')('S'|'s') ;
 ASC : ('A'|'a')('S'|'s')('C'|'c') ;
 BEFORE : ('B'|'b')('E'|'e')('F'|'f')('O'|'o')('R'|'r')('E'|'e') ;
 BEGIN : ('B'|'b')('E'|'e')('G'|'g')('I'|'i')('N'|'n') ;
@@ -548,6 +549,7 @@ BY : ('B'|'b')('Y'|'y') ;
 BYTE : ('B'|'b')('Y'|'y')('T'|'t')('E'|'e') ;
 BYTEARRAY : ('B'|'b')('Y'|'y')('T'|'t')('E'|'e')('A'|'a')('R'|'r')('R'|'r')('A'|'a')('Y'|'y') ;
 CONTAINS : ('C'|'c')('O'|'o')('N'|'n')('T'|'t')('A'|'a')('I'|'i')('N'|'n')('S'|'s') ;
+DEFINED : ('D'|'d')('E'|'e')('F'|'f')('I'|'i')('N'|'n')('E'|'e')('D'|'d') ;
 DESC : ('D'|'d')('E'|'e')('S'|'s')('C'|'c') ;
 DESCRIBE : ('D'|'d')('E'|'e')('S'|'s')('C'|'c')('R'|'r')('I'|'i')('B'|'b')('E'|'e') ;
 DOUBLE : ('D'|'d')('O'|'o')('U'|'u')('B'|'b')('L'|'l')('E'|'e') ;
@@ -1828,6 +1830,18 @@ type_argument
     |   '?' (('extends' | 'super') type)?
     ;
 
+formal_parameters
+    :   LPAR formal_parameter_decls RPAR
+    ;
+
+formal_parameter_decls
+    :   variable_modifiers type formal_parameter_decls_rest
+    ;
+    
+formal_parameter_decls_rest
+    :   variable_declarator_id (COMMA formal_parameter_decls)?
+    ;
+
 primitive_type
     :   { "boolean".equals(input.LT(1).getText()) }? BOOLEAN
     |   'char'
@@ -1859,7 +1873,7 @@ variable_modifier
     ;
 
 relevance_model returns [String functionBody]
-    :   BEGIN model_block END
+    :   DEFINED AS formal_parameters BEGIN model_block END
         {
             $functionBody = $model_block.text;
         }
