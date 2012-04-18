@@ -432,6 +432,52 @@ import java.text.SimpleDateFormat;
         fieldMap.put(field, new JSONObject().put("range",
                                                  new JSONObject().put(field, newSpec)));
     }
+    
+    private void processRelevanceModelParam(JSONObject json,
+                                            final String typeName,
+                                            final String varName)
+        throws JSONException
+    {
+        JSONArray funcParams = json.optJSONArray("function_params");
+        if (funcParams == null) {
+            funcParams = new JSONArray();
+            json.put("function_params", funcParams);
+        }
+
+        // XXX Need to detect duplicates
+        funcParams.put(varName);
+
+        if (_facetInfoMap.get(varName) == null) {
+            // This is NOT a facet, put it in the variable list
+            JSONObject variables = json.optJSONObject("variables");
+            if (variables == null) {
+                variables = new JSONObject();
+                json.put("variables", variables);
+            }
+
+            JSONArray varsWithSameType = variables.optJSONArray(typeName);
+            if (varsWithSameType == null) {
+                varsWithSameType = new JSONArray();
+                variables.put(typeName, varsWithSameType);
+            }
+            varsWithSameType.put(varName);
+        }
+        else {
+            JSONObject facets = json.optJSONObject("facets");
+            if (facets == null) {
+                facets = new JSONObject();
+                json.put("facets", facets);
+            }
+
+            // XXX Need to double check the type
+            JSONArray facetsWithSameType = facets.optJSONArray(typeName);
+            if (facetsWithSameType == null) {
+                facetsWithSameType = new JSONArray();
+                facets.put(typeName, facetsWithSameType);
+            }
+            facetsWithSameType.put(varName);
+        }
+    }
 }
 
 @rulecatch {
@@ -1796,8 +1842,11 @@ variable_declarator
     :   variable_declarator_id ('=' variable_initializer)?
     ;
 
-variable_declarator_id
+variable_declarator_id returns [String varName]
     :   IDENT ('[' ']')*
+        {
+            $varName = $IDENT.text;
+        }
     ;
 
 variable_initializer
@@ -1809,20 +1858,36 @@ array_initializer
     :   '{' (variable_initializer (',' variable_initializer)* (',')?)? '}'
     ;
 
-type
-	:	class_or_interface_type ('[' ']')*
-	|	primitive_type ('[' ']')*
+type returns [String typeName]
+    :   class_or_interface_type ('[' ']')*
+        { $typeName = $class_or_interface_type.typeName;}
+    |   primitive_type ('[' ']')*
+        { $typeName = $primitive_type.text.toLowerCase();}
     |   boxed_type ('[' ']')*
+        { $typeName = $boxed_type.text.toLowerCase();}
     |   limited_type ('[' ']')*
-	;
+        { $typeName = $limited_type.text.toLowerCase();}
+    ;
 
-class_or_interface_type
-//	:	IDENT type_arguments? ('.' IDENT type_arguments? )*
-    :   ('Map' | 'Set') type_arguments? ('.' IDENT type_arguments? )*
-	;
+class_or_interface_type returns [String typeName]
+//  :   IDENT type_arguments? ('.' IDENT type_arguments? )*
+    :   (ms='Map' | ms='Set') type_arguments
+        { $typeName = $ms.text.toLowerCase() + "_" + $type_arguments.typeArgs;}
+    ;
 
-type_arguments
-    :   '<' type_argument (',' type_argument)* '>'
+type_arguments returns [String typeArgs]
+@init {
+    StringBuilder builder = new StringBuilder();
+}
+    :   '<'
+        ta1=type_argument
+        { builder.append($ta1.text); }
+        (COMMA ta2=type_argument
+            { builder.append("_").append($ta2.text); }
+        )* '>'
+        {
+            $typeArgs = builder.toString().toLowerCase();
+        }
     ;
 
 type_argument
@@ -1830,16 +1895,51 @@ type_argument
     |   '?' (('extends' | 'super') type)?
     ;
 
-formal_parameters
+formal_parameters returns [JSONObject json]
     :   LPAR formal_parameter_decls RPAR
+        {
+            $json = $formal_parameter_decls.json;
+            System.out.println(">>> XXX params = " + $json);
+        }
     ;
 
-formal_parameter_decls
-    :   variable_modifiers type formal_parameter_decls_rest
+formal_parameter_decls returns [JSONObject json]
+@init {
+    $json = new JSONObject();
+}
+    :   decl=formal_parameter_decl
+        {
+            System.out.println(">>> decl = " + $decl.typeName + " " + $decl.varName);
+            try {
+                processRelevanceModelParam($json, $decl.typeName, $decl.varName);
+            }
+            catch (JSONException err) {
+                throw new FailedPredicateException(input,
+                                                   "formal_parameter_decls",
+                                                   "JSONException: " + err.getMessage());
+            }
+        }
+        (COMMA decl=formal_parameter_decl
+            {
+                System.out.println(">>> decl = " + $decl.typeName + " " + $decl.varName);
+                try {
+                    processRelevanceModelParam($json, $decl.typeName, $decl.varName);
+                }
+                catch (JSONException err) {
+                    throw new FailedPredicateException(input,
+                                                       "formal_parameter_decl",
+                                                       "JSONException: " + err.getMessage());
+                }
+            }
+        )*
     ;
     
-formal_parameter_decls_rest
-    :   variable_declarator_id (COMMA formal_parameter_decls)?
+formal_parameter_decl returns [String typeName, String varName]
+    :   variable_modifiers type variable_declarator_id
+        {
+            $typeName = $type.typeName;
+            $varName = $variable_declarator_id.varName;
+        }
     ;
 
 primitive_type
@@ -1872,8 +1972,11 @@ variable_modifier
     :   'final'
     ;
 
-relevance_model returns [String functionBody]
-    :   DEFINED AS formal_parameters BEGIN model_block END
+relevance_model returns [String functionBody, JSONObject json]
+@init {
+    $json = new JSONObject();
+}
+    :   DEFINED AS params=formal_parameters BEGIN model_block END
         {
             $functionBody = $model_block.text;
         }

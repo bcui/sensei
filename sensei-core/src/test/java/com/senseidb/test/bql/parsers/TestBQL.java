@@ -1476,7 +1476,9 @@ public class TestBQL extends TestCase
       "FROM cars " +
       "WHERE color = 'red' " +
       "USING RELEVANCE MODEL my_model ('srcid':1234, 'timeVal':9999, '_half_time':8888) " +
-      "  DEFINED AS (int intParam1, int intParam2, String strParam) " +
+      "  DEFINED AS (int intParam1, int intParam2, String strParam, " +
+      "              Set<Double> setParam, Map<String, Float> mapParam, " +
+      "              float price, String color) " +
       "  BEGIN " +
       "    int myInt = 0; " +
       "    float delta = System.currentTimeMillis() - timeVal; " +
