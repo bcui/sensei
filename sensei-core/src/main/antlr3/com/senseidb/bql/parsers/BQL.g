@@ -1899,7 +1899,6 @@ formal_parameters returns [JSONObject json]
     :   LPAR formal_parameter_decls RPAR
         {
             $json = $formal_parameter_decls.json;
-            System.out.println(">>> XXX params = " + $json);
         }
     ;
 
@@ -1909,7 +1908,6 @@ formal_parameter_decls returns [JSONObject json]
 }
     :   decl=formal_parameter_decl
         {
-            System.out.println(">>> decl = " + $decl.typeName + " " + $decl.varName);
             try {
                 processRelevanceModelParam($json, $decl.typeName, $decl.varName);
             }
@@ -1921,7 +1919,6 @@ formal_parameter_decls returns [JSONObject json]
         }
         (COMMA decl=formal_parameter_decl
             {
-                System.out.println(">>> decl = " + $decl.typeName + " " + $decl.varName);
                 try {
                     processRelevanceModelParam($json, $decl.typeName, $decl.varName);
                 }
@@ -1973,12 +1970,10 @@ variable_modifier
     ;
 
 relevance_model returns [String functionBody, JSONObject json]
-@init {
-    $json = new JSONObject();
-}
     :   DEFINED AS params=formal_parameters BEGIN model_block END
         {
             $functionBody = $model_block.text;
+            $json = $params.json;
         }
     ;
 
@@ -2271,8 +2266,25 @@ relevance_model_clause returns [JSONObject json]
                     $json.put("values", $prop_list.json);
                 }
                 else {
+                    JSONObject modelInfo = $model.json;
                     JSONObject modelJson = new JSONObject();
                     modelJson.put("function", $model.functionBody);
+
+                    JSONArray funcParams = modelInfo.optJSONArray("function_params");
+                    if (funcParams != null) {
+                        modelJson.put("function_params", funcParams);
+                    }
+
+                    JSONObject facets = modelInfo.optJSONObject("facets");
+                    if (facets != null) {
+                        modelJson.put("facets", facets);
+                    }
+
+                    JSONObject variables = modelInfo.optJSONObject("variables");
+                    if (variables != null) {
+                        modelJson.put("variables", variables);
+                    }
+
                     $json.put("model", modelJson);
                     $json.put("values", $prop_list.json);
                 }
