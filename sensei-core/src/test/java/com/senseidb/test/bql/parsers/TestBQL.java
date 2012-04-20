@@ -1313,8 +1313,8 @@ public class TestBQL extends TestCase
       "    float f1 = 1.23f, f2 = 1.23F; " +
       "    float e1 = 2e+1234; " +
       "    Byte byte1; " +
-      "    Set<Double> mySet1, mySet2; " +
-      "    Map<String, Double> myMap1; " +
+      "    IntOpenHashSet mySet1, mySet2; " +
+      "    Object2IntOpenHashMap myMap1; " +
       "    return 100; " +
       "  END "
       );
@@ -1478,7 +1478,7 @@ public class TestBQL extends TestCase
       "WHERE color = 'red' " +
       "USING RELEVANCE MODEL my_model ('srcid':1234, 'timeVal':9999, '_half_time':8888) " +
       "  DEFINED AS (int intParam1, int intParam2, String strParam, " +
-      "              Set<Double> setParam, Map<String, Float> mapParam, " +
+      "              DoubleOpenHashSet setParam, Int2IntOpenHashMap mapParam, " +
       "              float price, String color) " +
       "  BEGIN " +
       "    int myInt = 0; " +

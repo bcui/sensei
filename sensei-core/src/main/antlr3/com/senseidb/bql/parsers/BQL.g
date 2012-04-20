@@ -648,6 +648,26 @@ SECS : ('S'|'s')('E'|'e')('C'|'c')('S'|'s')? ;
 MILLISECONDS : ('M'|'m')('I'|'i')('L'|'l')('L'|'l')('I'|'i')('S'|'s')('E'|'e')('C'|'c')('O'|'o')('N'|'n')('D'|'d')('S'|'s')? ;
 MSECS : ('M'|'m')('S'|'s')('E'|'e')('C'|'c')('S'|'s')? ;
 
+FAST_UTIL_DATA_TYPE
+    :   'IntOpenHashSet'
+    |   'LongOpenHashSet'
+    |   'ShortOpenHashSet'
+    |   'BooleanOpenHashSet'
+    |   'DoubleOpenHashSet'
+    |   'FloatOpenHashSet'
+    |   'ObjectOpenHashSet'
+    |   'Int2IntOpenHashMap'
+    |   'Int2FloatOpenHashMap'
+    |   'Int2DoubleOpenHashMap'
+    |   'Int2LongOpenHashMap'
+    |   'Int2ObjectOpenHashMap'
+    |   'Object2IntOpenHashMap'
+    |   'Object2FloatOpenHashMap'
+    |   'Object2DoubleOpenHashMap'
+    |   'Object2LongOpenHashMap'
+    |   'Object2ObjectOpenHashMap'
+    ;
+
 // Have to define this after the keywords?
 IDENT : (ALPHA | '_') (ALPHA | DIGIT | '-' | '_')* ;
 VARIABLE : '$' (ALPHA | DIGIT | '-' | '_')+ ;
@@ -1860,7 +1880,9 @@ array_initializer
 
 type returns [String typeName]
     :   class_or_interface_type ('[' ']')*
-        { $typeName = $class_or_interface_type.typeName;}
+        { $typeName = $class_or_interface_type.typeName;
+            System.out.println(">>> in type, typeName = " + $typeName);
+        }
     |   primitive_type ('[' ']')*
         { $typeName = $primitive_type.text.toLowerCase();}
     |   boxed_type ('[' ']')*
@@ -1870,9 +1892,8 @@ type returns [String typeName]
     ;
 
 class_or_interface_type returns [String typeName]
-//  :   IDENT type_arguments? ('.' IDENT type_arguments? )*
-    :   (ms='Map' | ms='Set') type_arguments
-        { $typeName = $ms.text.toLowerCase() + "_" + $type_arguments.typeArgs;}
+    :   FAST_UTIL_DATA_TYPE
+        { $typeName = $FAST_UTIL_DATA_TYPE.text;}
     ;
 
 type_arguments returns [String typeArgs]
