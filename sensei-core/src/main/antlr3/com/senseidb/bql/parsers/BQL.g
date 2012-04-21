@@ -1900,9 +1900,7 @@ array_initializer
 
 type returns [String typeName]
     :   class_or_interface_type ('[' ']')*
-        { $typeName = $class_or_interface_type.typeName;
-            System.out.println(">>> in type, typeName = " + $typeName);
-        }
+        { $typeName = $class_or_interface_type.typeName; }
     |   primitive_type ('[' ']')*
         { $typeName = $primitive_type.text;}
     |   boxed_type ('[' ']')*
