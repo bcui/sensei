@@ -58,12 +58,34 @@ import java.text.SimpleDateFormat;
     private static final int DEFAULT_REQUEST_MAX_PER_GROUP = 10;
     private static final int DEFAULT_FACET_MINHIT = 1;
     private static final int DEFAULT_FACET_MAXHIT = 10;
+    private static final Map<String, String> _fastutilTypeMap;
 
-    Map<String, String[]> _facetInfoMap;
+    private Map<String, String[]> _facetInfoMap;
     private long _now;
     private HashSet<String> _variables;
     private SimpleDateFormat[] _format1 = new SimpleDateFormat[2];
     private SimpleDateFormat[] _format2 = new SimpleDateFormat[2];
+
+    static {
+        _fastutilTypeMap = new HashMap<String, String>();
+        _fastutilTypeMap.put("IntOpenHashSet", "set_int");
+        _fastutilTypeMap.put("FloatOpenHashSet", "set_float");
+        _fastutilTypeMap.put("DoubleOpenHashSet", "set_double");
+        _fastutilTypeMap.put("LongOpenHashSet", "set_long");
+        _fastutilTypeMap.put("ObjectOpenHashSet", "set_string");
+
+        _fastutilTypeMap.put("Int2IntOpenHashMap", "map_int_int");
+        _fastutilTypeMap.put("Int2FloatOpenHashMap", "map_int_float");
+        _fastutilTypeMap.put("Int2DoubleOpenHashMap", "map_int_double");
+        _fastutilTypeMap.put("Int2LongOpenHashMap", "map_int_long");
+        _fastutilTypeMap.put("Int2ObjectOpenHashMap", "map_int_string");
+
+        _fastutilTypeMap.put("Object2IntOpenHashMap", "map_string_int");
+        _fastutilTypeMap.put("Object2FloatOpenHashMap", "map_string_float");
+        _fastutilTypeMap.put("Object2DoubleOpenHashMap", "map_string_double");
+        _fastutilTypeMap.put("Object2LongOpenHashMap", "map_string_long");
+        _fastutilTypeMap.put("Object2ObjectOpenHashMap", "map_string_string");
+    }
 
     public BQLParser(TokenStream input, Map<String, String[]> facetInfoMap)
     {
@@ -650,11 +672,9 @@ MSECS : ('M'|'m')('S'|'s')('E'|'e')('C'|'c')('S'|'s')? ;
 
 FAST_UTIL_DATA_TYPE
     :   'IntOpenHashSet'
-    |   'LongOpenHashSet'
-    |   'ShortOpenHashSet'
-    |   'BooleanOpenHashSet'
-    |   'DoubleOpenHashSet'
     |   'FloatOpenHashSet'
+    |   'DoubleOpenHashSet'
+    |   'LongOpenHashSet'
     |   'ObjectOpenHashSet'
     |   'Int2IntOpenHashMap'
     |   'Int2FloatOpenHashMap'
@@ -1893,7 +1913,7 @@ type returns [String typeName]
 
 class_or_interface_type returns [String typeName]
     :   FAST_UTIL_DATA_TYPE
-        { $typeName = $FAST_UTIL_DATA_TYPE.text;}
+        { $typeName = _fastutilTypeMap.get($FAST_UTIL_DATA_TYPE.text); }
     ;
 
 type_arguments returns [String typeArgs]
