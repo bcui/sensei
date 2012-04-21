@@ -1291,6 +1291,27 @@ public class TestBQL extends TestCase
   }
 
   @Test
+  public void testRelevanceModelFloatLiteral() throws Exception
+  {
+    System.out.println("testRelevanceModelFloatLiteral");
+    System.out.println("==================================================");
+
+    JSONObject json = _compiler.compile(
+      "SELECT color, year " +
+      "FROM cars " +
+      "WHERE color = 'red' " +
+      "USING RELEVANCE MODEL my_model ('srcid':1234) " +
+      "  DEFINED AS (int srcid) " +
+      "  BEGIN " +
+      "      return 0.123; " +
+      "  END "
+      );
+
+    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"_INNER_SCORE\",\"intParam1\",\"intParam2\",\"strParam\"],\"variables\":{\"int\":[\"intParam1\",\"intParam2\"],\"String\":[\"strParam\"],\"float\":[\"_INNER_SCORE\"]},\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 123;     else if (srcid > 200)       return 345;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    assertTrue(_comp.isEquals(json, expected));
+  }
+
+  @Test
   public void testRelevanceModelDataTypes() throws Exception
   {
     System.out.println("testRelevanceModelDataTypes");
@@ -1314,11 +1335,11 @@ public class TestBQL extends TestCase
       "    Byte byte1; " +
       "    IntOpenHashSet mySet1, mySet2; " +
       "    Object2IntOpenHashMap myMap1; " +
-      "    return 0.100f; " +
+      "    return 0.123f; " +
       "  END "
       );
 
-    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"srcid\"],\"variables\":{\"int\":[\"srcid\"]},\"function\":\"int myInt = 100;     while (myInt < 200) {       myInt++;       myInt = myInt + 10;     }     return 100;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"intParam1\",\"intParam2\",\"strParam\"],\"variables\":{\"String\":[\"strParam\"],\"int\":[\"intParam1\",\"intParam2\"]},\"function\":\"int myInt = 100;     String str1;     String str2 = abcd ;     char ch = c;     Integer int1, int2;     int int3 = 0L, int4 = 1234l;     float f1 = 1.23f, f2 = 1.23F;     float e1 = 2e+1234;     Byte byte1;     IntOpenHashSet mySet1, mySet2;     Object2IntOpenHashMap myMap1;     return 0.123f;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
     assertTrue(_comp.isEquals(json, expected));
   }
 
