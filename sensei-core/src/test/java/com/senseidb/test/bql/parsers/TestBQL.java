@@ -1274,21 +1274,20 @@ public class TestBQL extends TestCase
       "FROM cars " +
       "WHERE color = 'red' " +
       "USING RELEVANCE MODEL my_model ('srcid':1234) " +
-      "  DEFINED AS (int intParam1, int intParam2, String strParam) " +
+      "  DEFINED AS (float _INNER_SCORE, int intParam1, int intParam2, String strParam) " +
       "  BEGIN " +
       "    int myInt = 100; " +
       "    if (srcid == myInt + 2) " +
-      "      return 100; " +
+      "      return 123; " +
       "    else if (srcid > 200) " +
-      "      return 200; " +
+      "      return 345; " +
       "    else " +
       "      return _INNER_SCORE; " +
       "  END "
       );
 
-    System.out.println(">>> json = " + json);
-    // JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 100;     else if (srcid > 200)       return 200;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
-    // assertTrue(_comp.isEquals(json, expected));
+    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"_INNER_SCORE\",\"intParam1\",\"intParam2\",\"strParam\"],\"variables\":{\"int\":[\"intParam1\",\"intParam2\"],\"string\":[\"strParam\"],\"float\":[\"_INNER_SCORE\"]},\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 123;     else if (srcid > 200)       return 345;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    assertTrue(_comp.isEquals(json, expected));
   }
 
   @Test
