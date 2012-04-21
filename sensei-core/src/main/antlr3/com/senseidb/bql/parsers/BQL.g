@@ -512,7 +512,7 @@ fragment DIGIT : '0'..'9' ;
 fragment ALPHA : 'a'..'z' | 'A'..'Z' ;
 
 INTEGER : ('0' | '1'..'9' '0'..'9'*) INTEGER_TYPE_SUFFIX? ;
-REAL : DIGIT+ '.' DIGIT+ ;
+REAL : DIGIT+ '.' DIGIT* ;
 LPAR : '(' ;
 RPAR : ')' ;
 COMMA : ',' ;
@@ -586,7 +586,7 @@ HEX_LITERAL : '0' ('x'|'X') HEX_DIGIT+ INTEGER_TYPE_SUFFIX? ;
 OCTAL_LITERAL : '0' ('0'..'7')+ INTEGER_TYPE_SUFFIX? ;
 
 FLOATING_POINT_LITERAL
-    :   ('0'..'9')+ '.' ('0'..'9')* EXPONENT? FLOAT_TYPE_SUFFIX?
+    :   REAL EXPONENT? FLOAT_TYPE_SUFFIX
     |   '.' ('0'..'9')+ EXPONENT? FLOAT_TYPE_SUFFIX?
     |   ('0'..'9')+ EXPONENT FLOAT_TYPE_SUFFIX?
     |   ('0'..'9')+ FLOAT_TYPE_SUFFIX
@@ -2263,6 +2263,7 @@ identifier_suffix
 
 literal 
     :   integer_literal
+    |   REAL
     |   FLOATING_POINT_LITERAL
     |   CHARACTER_LITERAL
     |   STRING_LITERAL
