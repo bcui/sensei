@@ -1904,11 +1904,11 @@ type returns [String typeName]
             System.out.println(">>> in type, typeName = " + $typeName);
         }
     |   primitive_type ('[' ']')*
-        { $typeName = $primitive_type.text.toLowerCase();}
+        { $typeName = $primitive_type.text;}
     |   boxed_type ('[' ']')*
-        { $typeName = $boxed_type.text.toLowerCase();}
+        { $typeName = $boxed_type.text;}
     |   limited_type ('[' ']')*
-        { $typeName = $limited_type.text.toLowerCase();}
+        { $typeName = $limited_type.text;}
     ;
 
 class_or_interface_type returns [String typeName]
@@ -1927,7 +1927,7 @@ type_arguments returns [String typeArgs]
             { builder.append("_").append($ta2.text); }
         )* '>'
         {
-            $typeArgs = builder.toString().toLowerCase();
+            $typeArgs = builder.toString();
         }
     ;
 

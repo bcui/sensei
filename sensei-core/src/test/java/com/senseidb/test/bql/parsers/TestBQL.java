@@ -1286,7 +1286,7 @@ public class TestBQL extends TestCase
       "  END "
       );
 
-    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"_INNER_SCORE\",\"intParam1\",\"intParam2\",\"strParam\"],\"variables\":{\"int\":[\"intParam1\",\"intParam2\"],\"string\":[\"strParam\"],\"float\":[\"_INNER_SCORE\"]},\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 123;     else if (srcid > 200)       return 345;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"_INNER_SCORE\",\"intParam1\",\"intParam2\",\"strParam\"],\"variables\":{\"int\":[\"intParam1\",\"intParam2\"],\"String\":[\"strParam\"],\"float\":[\"_INNER_SCORE\"]},\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 123;     else if (srcid > 200)       return 345;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
     assertTrue(_comp.isEquals(json, expected));
   }
 
@@ -1314,7 +1314,7 @@ public class TestBQL extends TestCase
       "    Byte byte1; " +
       "    IntOpenHashSet mySet1, mySet2; " +
       "    Object2IntOpenHashMap myMap1; " +
-      "    return 100; " +
+      "    return 0.100f; " +
       "  END "
       );
 
