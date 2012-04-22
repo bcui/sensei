@@ -1303,11 +1303,19 @@ public class TestBQL extends TestCase
       "USING RELEVANCE MODEL my_model ('srcid':1234) " +
       "  DEFINED AS (int srcid) " +
       "  BEGIN " +
-      "      return 0.25; " +
+      "    float x1 = 1.2; " +
+      "    x = 7.; " +
+      "    x = 7.5e12; " +
+      "    x = 7.5e-12; " +
+      "    x = 7.5e-12f; " +
+      "    x = .34; " +
+      "    x = .34e+12; " +
+      "    x = 123f; " +
+      "    return 0.25; " +
       "  END "
       );
 
-    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"srcid\"],\"variables\":{\"int\":[\"srcid\"]},\"function\":\"return 0.25;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"srcid\"],\"variables\":{\"int\":[\"srcid\"]},\"function\":\"float x1 = 1.2;     x = 7.;     x = 7.5e12;     x = 7.5e-12;     x = 7.5e-12f;     x = .34;     x = .34e+12;     x = 123f;     return 0.25;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
     assertTrue(_comp.isEquals(json, expected));
   }
 
