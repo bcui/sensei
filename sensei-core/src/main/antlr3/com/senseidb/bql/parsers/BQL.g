@@ -1,6 +1,4 @@
-grammar BQL;
-
-/*
+/*******************************************************************************************
 
 BNF Grammar for BQL
 ===================
@@ -171,6 +169,8 @@ BNF Grammar for BQL
 
 <identifier_part> ::= <identifier_start> | <digit>
 
+<variable> ::= '$' ( <alpha> | <digit> | '_' )+
+
 <column_name> ::= <identifier> | <quoted_string>
 
 <facet_name> ::= <identifier>
@@ -219,7 +219,9 @@ BNF Grammar for BQL
 
 <time> ::= DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT
 
-*/
+*******************************************************************************************/
+
+grammar BQL;
 
 options
 {
@@ -911,7 +913,7 @@ FAST_UTIL_DATA_TYPE
 
 // Have to define this after the keywords?
 IDENT : (ALPHA | '_') (ALPHA | DIGIT | '-' | '_')* ;
-VARIABLE : '$' (ALPHA | DIGIT | '-' | '_')+ ;
+VARIABLE : '$' (ALPHA | DIGIT | '_')+ ;
 
 WS : ( ' ' | '\t' | '\r' | '\n' )+ { $channel = HIDDEN; };
 
@@ -2618,3 +2620,7 @@ facet_param_type returns [String paramType]
             $paramType = $t.text;
         }
     ;
+
+//
+// The end of BQL.g
+//
