@@ -1423,9 +1423,8 @@ public class TestBQL extends TestCase
       "  END "
       );
 
-    System.out.println(">>> json = " + json);
-    // JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 100;     else if (srcid > 200)       return 200;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
-    // assertTrue(_comp.isEquals(json, expected));
+    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"srcid\"],\"variables\":{\"int\":[\"srcid\"]},\"function\":\"int myInt = 0;     for (int i = 0; i < 100; i++) {       myInt = myInt + 10;     }     return myInt;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    assertTrue(_comp.isEquals(json, expected));
   }
 
   @Test
@@ -1529,9 +1528,6 @@ public class TestBQL extends TestCase
     System.out.println("testRelevanceModelExample1");
     System.out.println("==================================================");
 
-    try
-    {
-      
     JSONObject json = _compiler.compile(
       "SELECT * " +
       "FROM cars " +
@@ -1547,13 +1543,9 @@ public class TestBQL extends TestCase
       "  END " +
       "ORDER BY relevance"
       );
-    System.out.println(">>> json = " + json);
-    }
-    catch (Exception err) 
-    {
-      System.out.println(">>> err = " + err);
-    }
-    
+
+    JSONObject expected = new JSONObject("{\"sort\":\"relevance\",\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"_INNER_SCORE\",\"thisYear\",\"year\",\"goodYear\"],\"facets\":{\"int\":[\"year\"]},\"variables\":{\"set_int\":[\"goodYear\"],\"int\":[\"thisYear\"]},\"function\":\"if (goodYear.contains(year))       return (float)Math.exp(10d);     if (year == thisYear)       return 87f;     return _INNER_SCORE;\"},\"values\":{\"thisYear\":2001,\"goodYear\":[1996]}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"*\"]}}");
+    assertTrue(_comp.isEquals(json, expected));
   }
 
 }
