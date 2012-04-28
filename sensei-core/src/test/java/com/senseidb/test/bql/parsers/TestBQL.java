@@ -1373,7 +1373,7 @@ public class TestBQL extends TestCase
       "  END "
       );
 
-    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"srcid\"],\"variables\":{\"int\":[\"srcid\"]},\"function\":\"int myInt = 100;     do {       myInt = myInt + 10;     } while (myInt < 100);     return 100;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"srcid\"],\"variables\":{\"int\":[\"srcid\"]},\"function\":\"int myInt = 100;     while (myInt < 200) {       myInt++;       myInt = myInt + 10;     }     return 100;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
     assertTrue(_comp.isEquals(json, expected));
   }
 
@@ -1398,7 +1398,7 @@ public class TestBQL extends TestCase
       "  END "
       );
 
-    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"srcid\"],\"variables\":{\"int\":[\"srcid\"]},\"function\":\"int myInt = 0;     for (int i = 0; i < 100; i++) {       myInt = myInt + 10;     }     return myInt;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"srcid\"],\"variables\":{\"int\":[\"srcid\"]},\"function\":\"int myInt = 100;     do {       myInt = myInt + 10;     } while (myInt < 100);     return 100;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
     assertTrue(_comp.isEquals(json, expected));
   }
 
