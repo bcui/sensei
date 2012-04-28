@@ -83,7 +83,7 @@ BNF Grammar for BQL
 
 <prop_list> ::= '(' <key_value_pair> ( ',' <key_value_pair> )* ')'
 
-<key_value_pair> ::= <quoted_string> ':' <quoted_string>
+<key_value_pair> ::= <quoted_string> ':' ( <value> | <non_variable_value_list> )
 
 <given_clause> ::= GIVEN FACET PARAM <facet_param_list>
 
@@ -2491,10 +2491,8 @@ identifier_suffix
     :   ('[' ']')+ '.' 'class'
     |   arguments
     |   '.' 'class'
-//    |   '.' explicitGenericInvocation
     |   '.' 'this'
     |   '.' 'super' arguments
-//    |   '.' 'new' innerCreator
     ;
 
 literal 
@@ -2521,8 +2519,6 @@ boolean_literal
 selector
     :   '.' IDENT arguments?
     |   '.' 'this'
-//    |   '.' 'super' superSuffix
-//    |   '.' 'new' innerCreator
     |   '[' expression ']'
     ;
 
