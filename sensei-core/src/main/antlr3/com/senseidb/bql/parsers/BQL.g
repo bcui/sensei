@@ -264,9 +264,10 @@ package com.senseidb.bql.parsers;
 @parser::header {
 package com.senseidb.bql.parsers;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.HashSet;
+import java.util.Set;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -282,6 +283,7 @@ import java.text.SimpleDateFormat;
     private static final int DEFAULT_FACET_MINHIT = 1;
     private static final int DEFAULT_FACET_MAXHIT = 10;
     private static final Map<String, String> _fastutilTypeMap;
+    private static final Set<String> _builtinRelevanceVars;
 
     private Map<String, String[]> _facetInfoMap;
     private long _now;
@@ -308,6 +310,10 @@ import java.text.SimpleDateFormat;
         _fastutilTypeMap.put("Object2DoubleOpenHashMap", "map_string_double");
         _fastutilTypeMap.put("Object2LongOpenHashMap", "map_string_long");
         _fastutilTypeMap.put("Object2ObjectOpenHashMap", "map_string_string");
+
+        _builtinRelevanceVars = new HashSet<String>();
+        _builtinRelevanceVars.add("_NOW");
+        _builtinRelevanceVars.add("_INNER_SCORE");
     }
 
     public BQLParser(TokenStream input, Map<String, String[]> facetInfoMap)
@@ -692,7 +698,10 @@ import java.text.SimpleDateFormat;
         // XXX Need to detect duplicates
         funcParams.put(varName);
 
-        if (_facetInfoMap.get(varName) == null) {
+        if (_builtinRelevanceVars.contains(varName)) {
+            // Do nothing
+        }
+        else if (_facetInfoMap.get(varName) == null) {
             // This is NOT a facet, put it in the variable list
             JSONObject variables = json.optJSONObject("variables");
             if (variables == null) {
@@ -2057,7 +2066,7 @@ prop_list returns [JSONObject json]
     :   LPAR p=key_value_pair
         {
             try {
-                $json.put($p.key, $p.value);
+                $json.put($p.key, $p.val);
             }
             catch (JSONException err) {
                 throw new FailedPredicateException(input, "prop_list", "JSONException: " + err.getMessage());
@@ -2066,7 +2075,7 @@ prop_list returns [JSONObject json]
         (COMMA p=key_value_pair
             {
                 try {
-                    $json.put($p.key, $p.value);
+                    $json.put($p.key, $p.val);
                 }
                 catch (JSONException err) {
                     throw new FailedPredicateException(input, "prop_list", "JSONException: " + err.getMessage());
@@ -2076,13 +2085,17 @@ prop_list returns [JSONObject json]
         -> key_value_pair+
     ;
 
-key_value_pair returns [String key, Object value]
-    :   STRING_LITERAL COLON v=value
+key_value_pair returns [String key, Object val]
+    :   STRING_LITERAL COLON (v=value | vs=non_variable_value_list)
         {
             $key = $STRING_LITERAL.text;
-            $value = $v.val;
+            if (v != null) {
+                $val = $v.val;
+            }
+            else {
+                $val = $vs.json;
+            }
         }
-        -> ^(COLON STRING_LITERAL $v)
     ;
 
 given_clause returns [JSONObject json]

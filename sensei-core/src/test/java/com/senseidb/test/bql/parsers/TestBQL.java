@@ -1286,7 +1286,7 @@ public class TestBQL extends TestCase
       "  END "
       );
 
-    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"_INNER_SCORE\",\"intParam1\",\"intParam2\",\"strParam\"],\"variables\":{\"int\":[\"intParam1\",\"intParam2\"],\"String\":[\"strParam\"],\"float\":[\"_INNER_SCORE\"]},\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 123;     else if (srcid > 200)       return 345;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
+    JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"_INNER_SCORE\",\"intParam1\",\"intParam2\",\"strParam\"],\"variables\":{\"int\":[\"intParam1\",\"intParam2\"],\"String\":[\"strParam\"]},\"function\":\"int myInt = 100;     if (srcid == myInt + 2)       return 123;     else if (srcid > 200)       return 345;     else       return _INNER_SCORE;\"},\"values\":{\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
     assertTrue(_comp.isEquals(json, expected));
   }
 
@@ -1521,6 +1521,39 @@ public class TestBQL extends TestCase
 
     JSONObject expected = new JSONObject("{\"query\":{\"query_string\":{\"query\":\"\",\"relevance\":{\"model\":{\"function_params\":[\"intParam1\",\"intParam2\",\"strParam\",\"setParam\",\"mapParam\",\"price\",\"color\"],\"facets\":{\"String\":[\"color\"],\"float\":[\"price\"]},\"variables\":{\"map_int_int\":[\"mapParam\"],\"String\":[\"strParam\"],\"int\":[\"intParam1\",\"intParam2\"],\"set_double\":[\"setParam\"]},\"function\":\"int myInt = 0;     float delta = System.currentTimeMillis() - timeVal;     float t = delta > 0 ? delta : 0;     float numHours = t / (1000 * 3600);     float timeScore = (float) Math.exp(-(numHours/_half_time));     if (tags.contains(coolTag))       return 999999;     int x = 0;     x += 5;     x *= 10;     return timeScore;\"},\"values\":{\"_half_time\":8888,\"timeVal\":9999,\"srcid\":1234}}}},\"selections\":[{\"term\":{\"color\":{\"value\":\"red\"}}}],\"meta\":{\"select_list\":[\"color\",\"year\"]}}");
     assertTrue(_comp.isEquals(json, expected));
+  }
+
+  @Test
+  public void testRelevanceModelExample1() throws Exception
+  {
+    System.out.println("testRelevanceModelExample1");
+    System.out.println("==================================================");
+
+    try
+    {
+      
+    JSONObject json = _compiler.compile(
+      "SELECT * " +
+      "FROM cars " +
+      "WHERE color = 'red' " + 
+      "USING RELEVANCE MODEL my_model ('thisYear':2001, 'goodYear':(1996)) " +
+      "  DEFINED AS (float _INNER_SCORE, int thisYear, int year, IntOpenHashSet goodYear) " +
+      "  BEGIN " +
+      "    if (goodYear.contains(year)) " +
+      "      return (float)Math.exp(10d); " +
+      "    if (year == thisYear) " +
+      "      return 87f; " +
+      "    return _INNER_SCORE; " +
+      "  END " +
+      "ORDER BY relevance"
+      );
+    System.out.println(">>> json = " + json);
+    }
+    catch (Exception err) 
+    {
+      System.out.println(">>> err = " + err);
+    }
+    
   }
 
 }
