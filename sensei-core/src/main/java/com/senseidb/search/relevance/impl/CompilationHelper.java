@@ -35,6 +35,7 @@ import javassist.CannotCompileException;
 import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtField;
 import javassist.CtMethod;
 import javassist.CtNewMethod;
 import javassist.NotFoundException;
@@ -337,6 +338,8 @@ public class CompilationHelper
     hs_safe.add("com.senseidb.search.relevance.impl.WeightedMFacetLong");
     hs_safe.add("com.senseidb.search.relevance.impl.WeightedMFacetShort");
     hs_safe.add("com.senseidb.search.relevance.impl.WeightedMFacetString");
+    
+    hs_safe.add("java.util.Random");
 
     pool.importPackage("java.util");
     for (String cls: hs_safe)
@@ -473,7 +476,8 @@ public class CompilationHelper
       {
         String symbol = varArray.getString(i);
         if (symbol.equals(RelevanceJSONConstants.KW_INNER_SCORE) ||
-            symbol.equals(RelevanceJSONConstants.KW_NOW))
+            symbol.equals(RelevanceJSONConstants.KW_NOW) ||
+            symbol.equals(RelevanceJSONConstants.KW_RANDOM))
         {
           throw new RelevanceException(ErrorType.JsonParsingError, "Internal variable name, " + symbol + ", is reserved.");
         }
@@ -560,7 +564,8 @@ public class CompilationHelper
         ch.addInterface(ci);
         String functionString = makeFuncString(dataTable);
 
-        addFacilityMethods(ch);
+        addStaticFacilityFields(ch);
+        addStaticFacilityMethods(ch);
 
         CtMethod m;
         try
@@ -905,7 +910,23 @@ public class CompilationHelper
     return false;
   }
 
-  private static void addFacilityMethods(CtClass ch) throws JSONException
+  private static void addStaticFacilityFields(CtClass ch) throws JSONException
+  {
+    // add a random field in the object;
+    CtField f;
+    try
+    {
+      f = CtField.make("public static java.util.Random _RANDOM = new java.util.Random();", ch);
+      ch.addField(f);
+    }
+    catch (CannotCompileException e)
+    {
+      logger.info(e.getMessage());
+      throw new JSONException(e);
+    }
+  }
+  
+  private static void addStaticFacilityMethods(CtClass ch) throws JSONException
   {
     addMethod(EXP_INT_METHOD, ch);
     addMethod(EXP_DOUBLE_METHOD, ch);

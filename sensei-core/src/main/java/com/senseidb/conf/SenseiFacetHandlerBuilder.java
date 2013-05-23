@@ -49,6 +49,7 @@ import com.senseidb.plugin.SenseiPluginRegistry;
 import com.senseidb.search.facet.UIDFacetHandler;
 import com.senseidb.search.plugin.PluggableSearchEngineManager;
 import com.senseidb.search.req.SenseiSystemInfo;
+import com.senseidb.search.req.mapred.functions.groupby.SumGroupByFacetHandler;
 
 public class SenseiFacetHandlerBuilder {
 
@@ -56,7 +57,7 @@ public class SenseiFacetHandlerBuilder {
 			.getLogger(SenseiFacetHandlerBuilder.class);
 
 	public static String UID_FACET_NAME = "_uid";
-
+	public static String SUM_GROUP_BY_FACET_NAME = "_sumGroupBy";
 	private static Map<String, TermListFactory<?>> getPredefinedTermListFactoryMap(JSONObject schemaObj) throws JSONException,ConfigurationException {
 		HashMap<String, TermListFactory<?>> retMap = new HashMap<String, TermListFactory<?>>();
 		JSONObject tableElem = schemaObj.optJSONObject("table");
@@ -145,8 +146,8 @@ public class SenseiFacetHandlerBuilder {
 	    return new MultiValueWithWeightFacetHandler(name, fieldName, termListFactory);
 	}
 
-	static PathFacetHandler buildPathHandler(String name,String fieldName, Map<String,List<String>> paramMap){
-		PathFacetHandler handler = new PathFacetHandler(name, fieldName, false);	// path does not support multi value yet
+	static PathFacetHandler buildPathHandler(String name,String fieldName, Map<String,List<String>> paramMap, boolean multi){
+		PathFacetHandler handler = new PathFacetHandler(name, fieldName, multi);
 		String sep = null;
 		if (paramMap!=null){
 			List<String> sepVals = paramMap.get("separator");
@@ -397,7 +398,9 @@ public class SenseiFacetHandlerBuilder {
 				if (type.equals("simple")) {
 					facetHandler = buildSimpleFacetHandler(name, fieldName, dependSet, termListFactoryMap.get(fieldName));
 				} else if (type.equals("path")) {
-					facetHandler = buildPathHandler(name, fieldName, paramMap);
+					facetHandler = buildPathHandler(name, fieldName, paramMap, false);
+                                } else if (type.equals("multi-path")) {
+                                        facetHandler = buildPathHandler(name, fieldName, paramMap, true);
 				} else if (type.equals("range")) {
 					if (column.optBoolean("multi")) {
 					  facetHandler = new MultiRangeFacetHandler(name, fieldName, null,  termListFactoryMap.get(fieldName) , buildPredefinedRanges(paramMap));
@@ -457,7 +460,9 @@ public class SenseiFacetHandlerBuilder {
 		facets.addAll((Collection<? extends FacetHandler<?>>) pluggableSearchEngineManager.createFacetHandlers());
 		// uid facet handler to be added by default
 		UIDFacetHandler uidHandler = new UIDFacetHandler(UID_FACET_NAME);
+		SumGroupByFacetHandler sumGroupByFacetHandler = new SumGroupByFacetHandler(SUM_GROUP_BY_FACET_NAME); 
 		facets.add(uidHandler);
+		facets.add(sumGroupByFacetHandler);
     sysInfo.setFacetInfos(facetInfos);
 
     return sysInfo;

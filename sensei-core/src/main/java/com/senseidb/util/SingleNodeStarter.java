@@ -17,11 +17,14 @@ import com.senseidb.search.node.SenseiServer;
 import com.senseidb.search.node.broker.BrokerConfig;
 import com.senseidb.search.req.SenseiRequest;
 import com.senseidb.search.req.SenseiResult;
+import com.senseidb.svc.api.SenseiException;
 
 public class SingleNodeStarter {
   private static boolean serverStarted = false;
   private static Server jettyServer;
   private static SenseiServer server;
+  private static SenseiBroker senseiBroker;
+  private static BrokerConfig brokerConfig;
 
   public static void start(String localPath, int expectedDocs) {
     start(new File(getUri(localPath)), expectedDocs);
@@ -45,21 +48,37 @@ public class SingleNodeStarter {
           }
         });
         PartitionedLoadBalancerFactory balancerFactory = new SenseiPartitionedLoadBalancerFactory(50);
-        BrokerConfig brokerConfig = new BrokerConfig(senseiConfiguration, balancerFactory);
+         brokerConfig = new BrokerConfig(senseiConfiguration, balancerFactory);
         brokerConfig.init();
-        SenseiBroker senseiBroker = brokerConfig.buildSenseiBroker();
-        while (true) {
-          SenseiResult senseiResult = senseiBroker.browse(new SenseiRequest());
-          int totalDocs = senseiResult.getTotalDocs();
-          System.out.println("TotalDocs = " + totalDocs);
-          if (totalDocs >= expectedDocs) {
-            break;
-          }
-          Thread.sleep(100);
-        }
+         senseiBroker = brokerConfig.buildSenseiBroker();
+        waitTillServerStarts(expectedDocs);
       } catch (Exception ex) {
         throw new RuntimeException(ex);
       }
+    }
+  }
+
+  public static void waitTillServerStarts(int expectedDocs) throws SenseiException, InterruptedException {
+    int counter = 0;
+    while (true) {
+      SenseiResult senseiResult = senseiBroker.browse(new SenseiRequest());
+      if (senseiBroker.isDisconnected()) {
+        brokerConfig.shutdown();
+        Thread.sleep(5000);
+        brokerConfig.init();
+        senseiBroker = brokerConfig.buildSenseiBroker();
+        System.out.println("Restarted the broker");
+      }
+      int totalDocs = senseiResult.getTotalDocs();
+      System.out.println("TotalDocs = " + totalDocs);
+      if (counter > 200) {
+        throw new IllegalStateException("Wait timeout");
+      }
+      if (totalDocs >= expectedDocs) {
+        break;
+      }
+      Thread.sleep(1000);
+      counter++;
     }
   }
 
@@ -87,8 +106,9 @@ public class SingleNodeStarter {
       throw new RuntimeException(ex);
     }
   }
-
+  
   public static void shutdown() {
+    senseiBroker = null;
     try {
       jettyServer.stop();
     } catch (Exception e) {
